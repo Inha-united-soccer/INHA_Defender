@@ -224,3 +224,6 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
     data->oppoScore = static_cast<int>(oppoTeamInfo.score);
 }
 
+void Brain::detectionsCallback(const vision_interface::msg::Detections::SharedPtr msg){
+    
+}
