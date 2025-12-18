@@ -545,12 +545,12 @@ void updateRelativePos(GameObject &obj, const std::shared_ptr<BrainData> &data, 
 
 // 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 함수 
 // 팀원 정보를 처리하는 부분 주석 처리됨 -> 나중에 고도화 필요
-void updateBallMemory(const std::shared_ptr<BrainData> &data, const std::shared_ptr<BrainTree> &tree, const std::shared_ptr<BrainLog> &log){
+void updateBallMemory(const std::shared_ptr<BrainData> &data, const std::shared_ptr<BrainTree> &tree, const std::shared_ptr<BrainConfig> &config, const std::shared_ptr<BrainLog> &log){
 
-    double secs = msecsSince(data->ball.timePoint) / 1000; 
+    double secs = brain->msecsSince(data->ball.timePoint) / 1000; 
     
     double ballMemTimeout;
-    get_parameter("strategy.ball_memory_timeout", ballMemTimeout);
+    config->get_parameter("strategy.ball_memory_timeout", ballMemTimeout);
 
     // 시간이 지나면 공의 위치를 기억하지 않음
     if (secs > ballMemTimeout) { 

@@ -114,7 +114,7 @@ NodeStatus CamTrackBall::tick(){
         //     yaw = brain->data->tmBall.yawToRobot;
         // } 
         else { log("reached impossible condition"); }
-        logTrackingBox(0x000000FF, "ball not detected"); 
+        logTrackingBox(0x000000FF, "ball not detected"); // 검은색 박스로 바뀜
     }
      
     // 내가 공을 볼 때 
