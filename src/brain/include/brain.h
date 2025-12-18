@@ -57,6 +57,9 @@ public:
     void tick();
     double msecsSince(rclcpp::Time time); // 특정 시간(timestamp) 이후 몇 밀리초가 지났는지 계산하는 유틸리티 함수
 
+    void calibrateOdom(double x, double y, double theta);
+    bool isBoundingBoxInCenter(BoundingBox boundingBox, double xRatio, double yRatio);
+
     // 행동 노드들 등록
     void registerWalkNodes(BT::BehaviorTreeFactory &factory){RegisterWalkNodes(factory, this);}
     void registerMoveHeadNodes(BT::BehaviorTreeFactory &factory){RegisterMoveHeadNodes(factory, this);}
@@ -66,6 +69,7 @@ public:
     void gameControlCallback(const game_controller_interface::msg::GameControlData &msg);
     void detectionsCallback(const vision_interface::msg::Detections::SharedPtr msg);
     void fieldLineCallback(const vision_interface::msg::LineSegments &msg);
+    void odometerCallback(const booster_interface::msg::Odometer &msg);
 
     
 private:
@@ -75,6 +79,7 @@ private:
     rclcpp::Subscription<game_controller_interface::msg::GameControlData>::SharedPtr gameControlSubscription;
     rclcpp::Subscription<vision_interface::msg::Detections>::SharedPtr detectionsSubscription;
     rclcpp::Subscription<vision_interface::msg::LineSegments>::SharedPtr subFieldLine;
+    rclcpp::Subscription<booster_interface::msg::Odometer>::SharedPtr odometerSubscription;
     
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };

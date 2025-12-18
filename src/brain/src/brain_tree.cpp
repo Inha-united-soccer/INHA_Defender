@@ -20,7 +20,8 @@ void BrainTree::init(){
 
     brain->registerWalkNodes(factory); // walk 관련 노드 등록
     brain->registerMoveHeadNodes(factory); // head move 관련 노드 등록
-
+    brain->registerLocatorNodes(factory); // locator 관련 노드 등록
+    
     factory.registerBehaviorTreeFromFile(brain->config->treeFilePath);
     tree = factory.createTree("MainTree");
 
@@ -42,7 +43,7 @@ void BrainTree::initEntry()
 
     // 실제 경기 중 상황 
     // 공 
-    setEntry<bool>("ball_location_known", false);
+    setEntry<bool>("ball_location_known", false); // 공 위치를 알고 있는지
     setEntry<bool>("ball_out", false); // 공이 밖으로 나갔는지 확인
 }
 
