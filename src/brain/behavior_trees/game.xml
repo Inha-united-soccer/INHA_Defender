@@ -19,12 +19,14 @@
                     
                     <ReactiveSequence _while="gc_game_sub_state_type=='TIMEOUT'" name="Timeout">
                         <SetVelocity x="0.0" y="0.0" theta="0.0" />
+                        <SelfLocateEnterField />
                     </ReactiveSequence>
 
                     <ReactiveSequence _while="gc_game_sub_state_type=='NONE'" name="Normal_Game">
                         
                         <ReactiveSequence _while="gc_game_state=='INITIAL'" name="Initial">
                             <SetVelocity x="0.0" y="0.0" theta="0.0" />
+                            <SelfLocateEnterField />
                         </ReactiveSequence>
 
                         <ReactiveSequence _while="gc_game_state=='READY'" name="Ready">
@@ -41,6 +43,7 @@
                         <ReactiveSequence _while="gc_game_state=='PLAY'" name="Play">
                             <!--<SubTree ID="dribble" _autoremap="true" /> 드리블을 위해 적용 -->
                             <SetVelocity x="0.0" y="0.0" theta="0.0" />
+                            <SubTree ID="Locate" _autoremap="true" />
                         </ReactiveSequence>
 
                         <ReactiveSequence _while="gc_game_state=='END'" name="End">
