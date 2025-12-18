@@ -2,6 +2,7 @@
     <!-- 포함될 BT 파일들 -->
     <!--<include path="./dribble.xml" />-->
     <include path="./subtrees/locate.xml" />
+    <include path="./subtrees/cam_find_and_track_ball.xml" />
 
     <!-- 시작 -->
     <BehaviorTree ID="MainTree">
@@ -26,7 +27,7 @@
                         
                         <ReactiveSequence _while="gc_game_state=='INITIAL'" name="Initial">
                             <SetVelocity x="0.0" y="0.0" theta="0.0" />
-                            <CamFindBall />
+                            <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
                             <SelfLocateEnterField />
                         </ReactiveSequence>
 
