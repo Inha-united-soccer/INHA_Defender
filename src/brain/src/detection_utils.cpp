@@ -239,8 +239,8 @@ void identifyFieldLine(FieldLine& line, const std::shared_ptr<BrainConfig> &conf
 
         // Boost confidence with other features
         if (mapLine.type == LineType::GoalLine) {  // 골라인의 경우
-            confidence += 0.3 * markCntOnFieldLine("TCross", line, 0.2, data); // T자 마킹 개수로 신뢰도 보정
-            confidence += 0.5 * goalpostCntOnFieldLine(line, 0.2, data); // 골포스트 근접도 보정
+            confidence += 0.3 * markCntOnFieldLine("TCross", line, data, 0.2); // T자 마킹 개수로 신뢰도 보정
+            confidence += 0.5 * goalpostCntOnFieldLine(line, data, 0.2); // 골포스트 근접도 보정
             if (
                 isBallOnFieldLine(line, data) // 공이 이 라인 위에 있고
                 && (tree->getEntry<string>("gc_game_sub_state") == "GET_READY" || tree->getEntry<string>("gc_game_sub_state") == "SET") // 준비 상태이면서
@@ -248,7 +248,7 @@ void identifyFieldLine(FieldLine& line, const std::shared_ptr<BrainConfig> &conf
             ) confidence += 0.3; // 추가 신뢰도 부여
         }
         if (mapLine.type == LineType::MiddleLine) { // 중앙선의 경우
-            confidence += 0.3 * markCntOnFieldLine("XCross", line, 0.2); // X자 교차점 근처 여부 보정
+            confidence += 0.3 * markCntOnFieldLine("XCross", line, data, 0.2); // X자 교차점 근처 여부 보정
             if (
                 isBallOnFieldLine(line, data)
                 && (tree->getEntry<string>("gc_game_sub_state") == "GET_READY" || tree->getEntry<string>("gc_game_sub_state") == "SET")
