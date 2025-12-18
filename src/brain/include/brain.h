@@ -62,9 +62,8 @@ public:
     double msecsSince(rclcpp::Time time); // 특정 시간(timestamp) 이후 몇 밀리초가 지났는지 계산하는 유틸리티 함수
 
     void calibrateOdom(double x, double y, double theta);
-    void updateFieldPos(GameObject& obj);
-    void logDetection(const vector<GameObject>& objects);
-    
+    void updateFieldPos(GameObject &obj);
+    void logDetection(const vector<GameObject> &gameObjects, bool logBoundingBox = true);
     bool isBoundingBoxInCenter(BoundingBox boundingBox, double xRatio = 0.5, double yRatio = 0.5);
 
 

@@ -510,39 +510,101 @@ bool Brain::isBoundingBoxInCenter(BoundingBox boundingBox, double xRatio, double
         && (y < config->camPixY * (1 + yRatio) / 2);
 }
 
-void Brain::updateFieldPos(GameObject& obj) {
-    double placeHolder;
-    transCoord(
-        obj.posToRobot.x, obj.posToRobot.y, 0,
-        data->robotPoseToField.x, data->robotPoseToField.y, data->robotPoseToField.theta,
-        obj.posToField.x, obj.posToField.y, placeHolder
-    );
+void Brain::updateFieldPos(GameObject &obj) {
+    Pose2D pr;
+    pr.x = obj.posToRobot.x;
+    pr.y = obj.posToRobot.y;
+    pr.theta = 0;
+    Pose2D pf = data->robot2field(pr);
+    obj.posToField.x = pf.x;
+    obj.posToField.y = pf.y;
+    obj.range = norm(obj.posToRobot.x, obj.posToRobot.y);
+    obj.yawToRobot = atan2(obj.posToRobot.y, obj.posToRobot.x);
+    obj.pitchToRobot = asin(config->robotHeight / obj.range);
 }
 
-void Brain::logDetection(const vector<GameObject>& objects) {
-    // Implement logDetection based on old code logic or simple loop logging to BrainLog
-    // For now, assume it logs balls and robots using BrainLog methods
-    // BrainLog only has logBall, logRobot. It doesn't seem to have a generic log for others or detections.
-    // However, detectionsToGameObjects was used to create objects.
-    
-    // We can iterate and log based on type
-    for(const auto& obj : objects) {
-        if(obj.label == "Ball") {
-            log->logBall("field/ball", {obj.posToField.x, obj.posToField.y}, 0xFFA500FF, true, false);
-        } else if(obj.label == "Person" || obj.label == "Opponent") {
-            // Assuming simplified logging for robots
-             // log->logRobot("field/robots", ...); need to check signature
-        }
-        // ...
+void Brain::logDetection(const vector<GameObject> &gameObjects, bool logBoundingBox) {
+    if (gameObjects.size() == 0) {
+        if (logBoundingBox) log->log("image/detection_boxes", rerun::Clear::FLAT);
+        log->log("field/detection_points", rerun::Clear::FLAT);
+        // log->log("robotframe/detection_points", rerun::Clear::FLAT);
+        return;
     }
-    // Alternatively, just empty if not critical for compilation, but user likely wants it.
-    // Checking `brain.cpp` old content or `brain_log.h` content...
-    // brain_log.h has `logRobot(string logPath, Pose2D pose, ...)` and `logBall`.
     
-    // Let's implement a basic version that calls logBall for balls.
-    for (const auto& obj : objects) {
-        if (obj.label == "Ball") {
-            log->logBall("field/detection/ball", {obj.posToField.x, obj.posToField.y}, 0xFFFF00FF, true, false);
+    // else 
+    rclcpp::Time timePoint = gameObjects[0].timePoint;
+    log->setTimeSeconds(timePoint.seconds());
+
+    map<std::string, rerun::Color> detectColorMap = {
+        {"LCross", rerun::Color(0xFFFF00FF)},
+        {"TCross", rerun::Color(0x00FF00FF)},
+        {"XCross", rerun::Color(0x0000FFFF)},
+        {"Person", rerun::Color(0xFF00FFFF)},
+        {"Goalpost", rerun::Color(0x00FFFFFF)},
+        {"Opponent", rerun::Color(0xFF0000FF)},
+        {"PenaltyPoint", rerun::Color(0xFF9900FF)},
+    };
+
+    // for logging boundingBoxes
+    vector<rerun::Vec2D> mins;
+    vector<rerun::Vec2D> sizes;
+    vector<rerun::Text> labels;
+    vector<rerun::Color> colors;
+
+    // for logging marker points in robot frame
+    vector<rerun::Vec2D> points;
+    vector<rerun::Vec2D> points_r; // robot frame
+    vector<double> radiis;
+
+    for (int i = 0; i < gameObjects.size(); i++)
+    {
+        auto obj = gameObjects[i];
+        auto label = obj.label;
+        labels.push_back(rerun::Text(
+            format("%s x:%.2f y:%.2f c:%.1f", 
+                label == "Opponent" || label == "Person" ? (label + "[" + obj.color + "]").c_str() : label.c_str(), 
+                obj.posToRobot.x, 
+                obj.posToRobot.y, 
+                obj.confidence)
+            )
+        );
+        points.push_back(rerun::Vec2D{obj.posToField.x, -obj.posToField.y}); // y 取反是因为 rerun Viewer 的坐标系是左手系。转一下看起来更方便。
+        points_r.push_back(rerun::Vec2D{obj.posToRobot.x, -obj.posToRobot.y});
+        mins.push_back(rerun::Vec2D{obj.boundingBox.xmin, obj.boundingBox.ymin});
+        sizes.push_back(rerun::Vec2D{obj.boundingBox.xmax - obj.boundingBox.xmin, obj.boundingBox.ymax - obj.boundingBox.ymin});
+
+        // if (obj.label == "Opponent") radiis.push_back(0.5);
+        radiis.push_back(0.1);
+
+        auto color = rerun::Color(0xFFFFFFFF);
+
+        auto it = detectColorMap.find(label);
+        if (it != detectColorMap.end())
+        {
+            color = detectColorMap[label];
         }
+        else
+        {
+            // do nothing, use default
+            // colors.push_back(rerun::Color(0xFFFFFFFF));
+        }
+        if (label == "Ball" && isBallOut(0.2, 10.0))
+            color = rerun::Color(0x000000FF);
+        if (label == "Ball" && obj.confidence < config->ballConfidenceThreshold)
+            color = rerun::Color(0xAAAAAAFF);
+        colors.push_back(color);
     }
+
+    
+    if (logBoundingBox) log->log("image/detection_boxes",
+             rerun::Boxes2D::from_mins_and_sizes(mins, sizes)
+                 .with_labels(labels)
+                 .with_colors(colors));
+
+    log->log("field/detection_points",
+             rerun::Points2D(points)
+                 .with_colors(colors)
+                 .with_radii(radiis)
+             // .with_labels(labels)
+    );
 }
