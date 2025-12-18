@@ -101,9 +101,17 @@ void Brain::init(){
 
     // ROS callback 연결
     detectionsSubscription = create_subscription<vision_interface::msg::Detections>("/booster_vision/detection", SUB_STATE_QUEUE_SIZE, bind(&Brain::detectionsCallback, this, _1));
-    // 필드 라인 인식 결과 구독
     subFieldLine = create_subscription<vision_interface::msg::LineSegments>("/booster_vision/line_segments", SUB_STATE_QUEUE_SIZE, bind(&Brain::fieldLineCallback, this, _1));
-    odometerSubscription = create_subscription<booster_interface::msg::Odometer>( "/odometer_state", SUB_STATE_QUEUE_SIZE, bind(&Brain::odometerCallback, this, _1));  // 콜백 연결
+    odometerSubscription = create_subscription<booster_interface::msg::Odometer>( "/odometer_state", SUB_STATE_QUEUE_SIZE, bind(&Brain::odometerCallback, this, _1));
+    lowStateSubscription = create_subscription<booster_interface::msg::LowState>("/low_state", SUB_STATE_QUEUE_SIZE, bind(&Brain::lowStateCallback, this, _1));
+    headPoseSubscription = create_subscription<geometry_msgs::msg::Pose>("/head_pose", SUB_STATE_QUEUE_SIZE, bind(&Brain::headPoseCallback, this, _1));
+    recoveryStateSubscription = create_subscription<booster_interface::msg::RawBytesMsg>("fall_down_recovery_state", SUB_STATE_QUEUE_SIZE, bind(&Brain::recoveryStateCallback, this, _1));
+
+    // rerun 연결 시에만 사용함 -> 이미지 캡처
+    if (config->rerunLogEnableFile || config->rerunLogEnableTCP) {
+        string imageTopic = get_parameter("vision.image_topic").as_string();
+        imageSubscription = create_subscription<sensor_msgs::msg::Image>(imageTopic, SUB_STATE_QUEUE_SIZE, bind(&Brain::imageCallback, this, _1));
+    }
 
 }
 
@@ -410,6 +418,169 @@ void Brain::fieldLineCallback(const vision_interface::msg::LineSegments &msg){ /
     data->setFieldLines(lines); // 데이터 객체에 저장
 }
 
+void Brain::odometerCallback(const booster_interface::msg::Odometer &msg){
+
+    data->robotPoseToOdom.x = msg.x * config->robotOdomFactor;
+    data->robotPoseToOdom.y = msg.y * config->robotOdomFactor;
+    data->robotPoseToOdom.theta = msg.theta;
+
+    // Odom 정보를 기반으로 Field 좌표계에서 로봇 위치 업데이트
+    transCoord(
+        data->robotPoseToOdom.x, data->robotPoseToOdom.y, data->robotPoseToOdom.theta,
+        data->odomToField.x, data->odomToField.y, data->odomToField.theta,
+        data->robotPoseToField.x, data->robotPoseToField.y, data->robotPoseToField.theta);
+
+    // tf 변환을 퍼블리시
+    geometry_msgs::msg::TransformStamped transform;
+    transform.header.stamp = this->get_clock()->now();
+    transform.header.frame_id = "odom";
+    transform.child_frame_id = "base_link";
+    
+    // 평행 이동(translation) 설정
+    transform.transform.translation.x = data->robotPoseToOdom.x;
+    transform.transform.translation.y = data->robotPoseToOdom.y;
+    transform.transform.translation.z = 0.0;
+    
+    // 회전(rotation) 설정 (오일러 각을 쿼터니언으로 변환)
+    tf2::Quaternion q;
+    q.setRPY(0, 0, data->robotPoseToOdom.theta);
+    transform.transform.rotation.x = q.x();
+    transform.transform.rotation.y = q.y();
+    transform.transform.rotation.z = q.z();
+    transform.transform.rotation.w = q.w();
+
+    log->setTimeNow();
+    log->log("debug/odom_callback", rerun::TextLog(format("x: %.1f, y: %.1f, z: %.1f", data->robotPoseToOdom.x, data->robotPoseToOdom.y, data->robotPoseToOdom.theta)));
+    
+    // tf 변환 브로드캐스트
+    tf_broadcaster_->sendTransform(transform);
+
+    // Odom 정보 로그 출력
+
+    log->setTimeNow();
+    auto color = 0x00FF00FF;
+    if (!data->tmImAlive) color = 0x006600FF;
+    else if (!data->tmImLead) color = 0x00CC00FF;
+    string label = format("Cost: %.1f", data->tmMyCost);
+    log->logRobot("field/robot", data->robotPoseToField, color, label, true);
+}
+
+void Brain::lowStateCallback(const booster_interface::msg::LowState &msg){
+    data->headYaw = msg.motor_state_serial[0].q;
+    data->headPitch = msg.motor_state_serial[1].q;
+    log->log("debug/head_angles", rerun::TextLog(format("pitch: %.1f, yaw: %.1f", data->headYaw, data->headPitch)));
+}
+
+void Brain::headPoseCallback(const geometry_msgs::msg::Pose& msg){
+    //  head → base 변환 행렬을 계산
+    Eigen::Matrix4d headToBase = Eigen::Matrix4d::Identity();
+    
+    // 쿼터니언으로부터 회전 행렬을 얻는다
+    Eigen::Quaterniond q(
+        msg.orientation.w,
+        msg.orientation.x,
+        msg.orientation.y,
+        msg.orientation.z
+    );
+    headToBase.block<3,3>(0,0) = q.toRotationMatrix();
+    
+    // 이동(평행이동) 벡터를 설정한다
+    headToBase.block<3,1>(0,3) = Eigen::Vector3d(
+        msg.position.x,
+        msg.position.y,
+        msg.position.z
+    );
+
+    // cam → base 변환 행렬을 계산하여 저장한다
+    data->camToRobot = headToBase * config->camToHead;
+}
+
+void Brain::recoveryStateCallback(const booster_interface::msg::RawBytesMsg &msg)
+{
+    // uint8_t state; // IS_READY = 0, IS_FALLING = 1, HAS_FALLEN = 2, IS_GETTING_UP = 3,  
+    // uint8_t is_recovery_available; // 1 for available, 0 for not available
+    // 使用 RobotRecoveryState 结构，将msg里面的msg转换为RobotRecoveryState
+    try
+    {
+        const std::vector<unsigned char>& buffer = msg.msg;
+        RobotRecoveryStateData recoveryState;
+        memcpy(&recoveryState, buffer.data(), buffer.size());
+
+        vector<RobotRecoveryState> recoveryStateMap = {
+            RobotRecoveryState::IS_READY,
+            RobotRecoveryState::IS_FALLING,
+            RobotRecoveryState::HAS_FALLEN,
+            RobotRecoveryState::IS_GETTING_UP
+        };
+        this->data->recoveryState = recoveryStateMap[static_cast<int>(recoveryState.state)];
+        this->data->isRecoveryAvailable = static_cast<bool>(recoveryState.is_recovery_available);
+        this->data->currentRobotModeIndex = static_cast<int>(recoveryState.current_planner_index);
+        
+        // cout << "recoveryState: " << static_cast<int>(recoveryState.state) << endl;
+        // cout << "recovery is available: " << static_cast<int>(recoveryState.is_recovery_available) << endl;
+        // cout << "current planner idx: " << static_cast<int>(recoveryState.current_planner_index) << endl;
+    }
+    catch(const std::exception& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
+}
+
+
+void Brain::imageCallback(const sensor_msgs::msg::Image &msg){ // rerun 시각화용
+    static int counter = 0;
+    counter++;
+    if (counter % config->rerunLogImgInterval == 0)
+    {
+        // 카메라 연결 상태가 안 좋아서 자동으로 해상도가 낮아지는 경우를 방지하기 위해,
+        // CamTrackBall 계산에 영향을 주지 않도록 현재 해상도를 설정값으로 갱신한다
+        config->camPixX = msg.width;
+        config->camPixY = msg.height;
+        log->log("debug/imageCallback", rerun::TextLog(format("img width: %.d, img height: %.d", msg.width, msg.height)));
+
+        cv::Mat image;
+        if (msg.encoding == "nv12" || msg.encoding == "NV12") {
+            // NV12: Y plane (H x W) + interleaved UV (H/2 x W)
+            size_t expected = (size_t)(msg.width * msg.height * 3 / 2);
+            if (msg.data.size() < expected) {
+                prtErr(format("NV12 buffer too small. got %zu expect >= %zu", msg.data.size(), expected));
+                return;
+            }
+            cv::Mat yuv(msg.height + msg.height / 2, msg.width, CV_8UC1, const_cast<uint8_t*>(msg.data.data()));
+            cv::cvtColor(yuv, image, cv::COLOR_YUV2BGR_NV12);
+        } else if (msg.encoding == "bgra8") {
+            // 创建 OpenCV Mat 对象，处理 BGRA 格式图像
+            image = cv::Mat(msg.height, msg.width, CV_8UC4, const_cast<uint8_t *>(msg.data.data()));
+            cv::Mat imageBGR;
+            // 将 BGRA 转换为 BGR，忽略 Alpha 通道
+            cv::cvtColor(image, imageBGR, cv::COLOR_BGRA2BGR);
+            image = imageBGR;
+        } else if (msg.encoding == "bgr8") {
+            // 原有 BGR8 处理逻辑
+            image = cv::Mat(msg.height, msg.width, CV_8UC3, const_cast<uint8_t *>(msg.data.data()));
+        } else if (msg.encoding == "rgb8") {
+            // 原有 RGB8 处理逻辑
+            image = cv::Mat(msg.height, msg.width, CV_8UC3, const_cast<uint8_t *>(msg.data.data()));
+            cv::cvtColor(image, image, cv::COLOR_RGB2BGR);
+        } else {
+            // 处理其他编码格式，或者记录错误日志
+            prtErr(format("Unsupported image encoding: %s", msg.encoding.c_str()));
+            return;
+        }
+
+        std::vector<uint8_t> compressed_image;
+        std::vector<int> compression_params = {cv::IMWRITE_JPEG_QUALITY, 10}; // 10 表示压缩质量，可以根据需要调整
+        cv::imencode(".jpg", image, compressed_image, compression_params);
+
+
+        log->setTimeSeconds(timePointFromHeader(msg.header).seconds());
+        log->log("image/img", rerun::EncodedImage::from_bytes(compressed_image));
+    }
+}
+
+
+
+/* ------------------------- 나중에 따로 뺄 거임 ----------------------------------*/
 void Brain::calibrateOdom(double x, double y, double theta){
 
     double x_or, y_or, theta_or; // or = odom to robot
@@ -465,53 +636,6 @@ void Brain::calibrateOdom(double x, double y, double theta){
     for (int i = 0; i < robots.size(); i++) gameObjects.push_back(robots[i]);
     for (int i = 0; i < goalposts.size(); i++) gameObjects.push_back(goalposts[i]);
     logDetection(gameObjects);
-}
-
-void Brain::odometerCallback(const booster_interface::msg::Odometer &msg){
-
-    data->robotPoseToOdom.x = msg.x * config->robotOdomFactor;
-    data->robotPoseToOdom.y = msg.y * config->robotOdomFactor;
-    data->robotPoseToOdom.theta = msg.theta;
-
-    // Odom 정보를 기반으로 Field 좌표계에서 로봇 위치 업데이트
-    transCoord(
-        data->robotPoseToOdom.x, data->robotPoseToOdom.y, data->robotPoseToOdom.theta,
-        data->odomToField.x, data->odomToField.y, data->odomToField.theta,
-        data->robotPoseToField.x, data->robotPoseToField.y, data->robotPoseToField.theta);
-
-    // tf 변환을 퍼블리시
-    geometry_msgs::msg::TransformStamped transform;
-    transform.header.stamp = this->get_clock()->now();
-    transform.header.frame_id = "odom";
-    transform.child_frame_id = "base_link";
-    
-    // 평행 이동(translation) 설정
-    transform.transform.translation.x = data->robotPoseToOdom.x;
-    transform.transform.translation.y = data->robotPoseToOdom.y;
-    transform.transform.translation.z = 0.0;
-    
-    // 회전(rotation) 설정 (오일러 각을 쿼터니언으로 변환)
-    tf2::Quaternion q;
-    q.setRPY(0, 0, data->robotPoseToOdom.theta);
-    transform.transform.rotation.x = q.x();
-    transform.transform.rotation.y = q.y();
-    transform.transform.rotation.z = q.z();
-    transform.transform.rotation.w = q.w();
-
-    log->setTimeNow();
-    log->log("debug/odom_callback", rerun::TextLog(format("x: %.1f, y: %.1f, z: %.1f", data->robotPoseToOdom.x, data->robotPoseToOdom.y, data->robotPoseToOdom.theta)));
-    
-    // tf 변환 브로드캐스트
-    tf_broadcaster_->sendTransform(transform);
-
-    // Odom 정보 로그 출력
-
-    log->setTimeNow();
-    auto color = 0x00FF00FF;
-    if (!data->tmImAlive) color = 0x006600FF;
-    else if (!data->tmImLead) color = 0x00CC00FF;
-    string label = format("Cost: %.1f", data->tmMyCost);
-    log->logRobot("field/robot", data->robotPoseToField, color, label, true);
 }
 
 bool Brain::isBoundingBoxInCenter(BoundingBox boundingBox, double xRatio, double yRatio) {

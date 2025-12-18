@@ -381,6 +381,7 @@ void detectProcessMarkings(const vector<GameObject> &markingObjs, const std::sha
        .with_labels(labels)
        .with_colors(0xFFFFFFFF));
 }
+
 void detectProcessGoalposts(const vector<GameObject> &goalpostObjs, const std::shared_ptr<BrainData> &data, const std::shared_ptr<BrainLog> &log){
     const double confidenceValve = 50; // confidence 低于这个阈值, 排除
     vector<GameObject> goalposts = {};

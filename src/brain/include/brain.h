@@ -76,7 +76,11 @@ public:
     void detectionsCallback(const vision_interface::msg::Detections &msg);
     void fieldLineCallback(const vision_interface::msg::LineSegments &msg);
     void odometerCallback(const booster_interface::msg::Odometer &msg);
+    void lowStateCallback(const booster_interface::msg::LowState &msg);
+    void headPoseCallback(const geometry_msgs::msg::Pose &msg);
+    void recoveryStateCallback(const booster_interface::msg::RawBytesMsg &msg);
 
+    void imageCallback(const sensor_msgs::msg::Image &msg);
     
 private:
     void loadConfig(); // config 불러오기
@@ -86,6 +90,12 @@ private:
     rclcpp::Subscription<vision_interface::msg::Detections>::SharedPtr detectionsSubscription;
     rclcpp::Subscription<vision_interface::msg::LineSegments>::SharedPtr subFieldLine;
     rclcpp::Subscription<booster_interface::msg::Odometer>::SharedPtr odometerSubscription;
+    rclcpp::Subscription<booster_interface::msg::LowState>::SharedPtr lowStateSubscription;
+    rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr headPoseSubscription;
+    rclcpp::Subscription<booster_interface::msg::RawBytesMsg>::SharedPtr recoveryStateSubscription;
+
+
+    rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr imageSubscription;
     
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
