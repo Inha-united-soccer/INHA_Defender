@@ -1,14 +1,14 @@
 brain_node:
   ros__parameters:
     game:
-      team_id: 100 # must be consistant with GameControl
+      team_id: 100 
       player_id: 1 # 1 | 2 | 3 | 4 | 5
-      field_type: "kid_size" # adult_size | kid_size | robo_league
+      field_type: "kid_size" 
       player_role: "striker" # striker | goal_keeper
       treat_person_as_robot: false 
       number_of_players: 4
      
-    robot: # 로봇 제어할 때 clapping 등 동작을 위한 파라미터
+    robot: # 로봇 제어할 때 clapping 등 동작을 위한 파라미터 -> robot_client.cpp 에서 사용
       robot_height: 0.9 
       odom_factor: 1.2 
       vx_factor: 0.50 
@@ -18,27 +18,27 @@ brain_node:
       vtheta_limit: 1.2 
 
     strategy:
-      ball_confidence_threshold: 50.0 
+      ball_confidence_threshold: 50.0 # 공 인식 신뢰도 임계값
       ball_memory_timeout: 5.0 # 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터
 
     locator:
-      min_marker_count: 5
-      max_residual: 0.35 
+      min_marker_count: 5 # 로컬라이저 최소 마커 수
+      max_residual: 0.35 # 최대 잔차 (오차 허용값)
 
     vision:
       image_topic: "/booster_camera_bridge/StereoNetNode/rectified_image" # d-robotics
       depth_image_topic: "/booster_camera_bridge/StereoNetNode/stereonet_depth" # d-robotics
-      cam_pixel_width: 544. # 相机像素宽度, d-robotics
-      cam_pixel_height: 448. # 相机像素高度, d-robotics
-      cam_fov_x: 69.4 # 相机视场角, 单位: 度, d-robotics
-      cam_fov_y: 42.5 # 相机视场角, 单位: 度, d-robotics
+      cam_pixel_width: 544. # d-robotics
+      cam_pixel_height: 448. # d-robotics
+      cam_fov_x: 69.4 # d-robotics / 카메라 시야각, 단위: 도
+      cam_fov_y: 42.5 # d-robotics / 카메라 시야각, 단위: 도
     
     rerunLog:
-      enable_tcp: true 
+      enable_tcp: true # 리런에 연결 할 지
       server_ip: "192.168.50.221:9876" 
-      enable_file: true 
-      log_dir: "/home/booster/Workspace/rrlog"
-      max_log_file_mins: 5.0 
-      img_interval: 1 
+      enable_file: true  # 리런 로그 파일을 만들지
+      log_dir: "/home/booster/Workspace/rrlog" # 리런 로그 파일 저장 경로
+      max_log_file_mins: 5.0 # 리런 로그 파일 최대 길이 (분)
+      img_interval: 1 # 리런 로그 파일 이미지 저장 간격
       
-    game_control_ip: "192.168.50.221"
+    game_control_ip: "192.168.50.221" # 게임 컨트롤러 IP 주소 -> gamecontroller launch 파일도 수정 필요

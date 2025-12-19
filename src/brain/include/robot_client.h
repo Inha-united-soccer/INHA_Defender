@@ -10,12 +10,15 @@
 
 using namespace std;
 
-class Brain; // 类相互依赖，向前声明
+class Brain; // 클래스들이 서로 의존하고 있으므로, 전방 선언(forward declaration)을 사용
+
 
 
 /**
- * RobotClient 类，调用 RobotSDK 操控机器人的操作都放在这里
- * 因为目前的代码里依赖 brain 里相关的一些东西，现在设计成跟 brain 相互依赖
+ * RobotClient 클래스
+ * Robot SDK를 호출하여 로봇을 제어하는 모든 동작을 이 클래스에 모아둔다.
+ * 현재 코드 구조상 brain 내부의 일부 기능들에 의존하고 있기 때문에,
+ * 설계상 brain과 서로 상호 의존하는 구조로 되어 있다.
  */
 class RobotClient
 {

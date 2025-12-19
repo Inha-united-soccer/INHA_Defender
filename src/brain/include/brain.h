@@ -32,14 +32,15 @@
 #include <stdexcept>
 #include "brain/msg/kick.hpp"
 
-#include "brain_config.h"
-#include "brain_data.h"
-#include "brain_log.h"
-#include "brain_tree.h"
-#include "locator.h"
-#include "robot_client.h"
-#include "walk.h"
-#include "movehead.h"
+#include "brain/msg/kick.hpp"
+
+// Forward declarations
+class BrainConfig;
+class BrainData;
+class BrainLog;
+class BrainTree;
+class Locator;
+class RobotClient;
 
 using namespace std;
 
@@ -47,6 +48,7 @@ using namespace std;
 class Brain : public rclcpp::Node
 {
 public:
+    // 클래스 객체 변수
     std::shared_ptr<RobotClient> client;
     std::shared_ptr<BrainTree> tree;
     std::shared_ptr<BrainConfig> config;
@@ -54,8 +56,10 @@ public:
     std::shared_ptr<Locator> locator;
     std::shared_ptr<BrainLog> log;
     
+    // 생성자, 소멸자
     Brain();
     ~Brain();
+
     void init();
     void tick();
     double msecsSince(rclcpp::Time time); // 특정 시간(timestamp) 이후 몇 밀리초가 지났는지 계산하는 유틸리티 함수
@@ -67,9 +71,10 @@ public:
 
 
     // 행동 노드들 등록
-    void registerWalkNodes(BT::BehaviorTreeFactory &factory){RegisterWalkNodes(factory, this);}
-    void registerMoveHeadNodes(BT::BehaviorTreeFactory &factory){RegisterMoveHeadNodes(factory, this);}
-    void registerLocatorNodes(BT::BehaviorTreeFactory &factory){RegisterLocatorNodes(factory, this);}
+    // 행동 노드들 등록
+    void registerWalkNodes(BT::BehaviorTreeFactory &factory);
+    void registerMoveHeadNodes(BT::BehaviorTreeFactory &factory);
+    void registerLocatorNodes(BT::BehaviorTreeFactory &factory);
     
     // ROS callback 함수
     void gameControlCallback(const game_controller_interface::msg::GameControlData &msg);
@@ -87,11 +92,12 @@ public:
     
 private:
     void loadConfig(); // config 불러오기
+
     /* ----------------------------- 변수 업데이트를 위한 함수들 ----------------------------- */
     void updateBallMemory();
     
 
-    // ROS subscription
+    // ROS subscription 변수
     rclcpp::Subscription<game_controller_interface::msg::GameControlData>::SharedPtr gameControlSubscription;
     rclcpp::Subscription<vision_interface::msg::Detections>::SharedPtr detectionsSubscription;
     rclcpp::Subscription<vision_interface::msg::LineSegments>::SharedPtr subFieldLine;
@@ -100,8 +106,8 @@ private:
     rclcpp::Subscription<geometry_msgs::msg::Pose>::SharedPtr headPoseSubscription;
     rclcpp::Subscription<booster_interface::msg::RawBytesMsg>::SharedPtr recoveryStateSubscription;
 
-
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr imageSubscription;
     
+    // tf2 broadcaster
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };

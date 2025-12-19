@@ -1,4 +1,9 @@
 #include "detection_utils.h"
+#include "brain_config.h"
+#include "brain_data.h"
+#include "brain_log.h"
+#include "brain_tree.h"
+
 #include "utils/math.h" // norm, transCoord 등
 #include <cmath>
 
@@ -112,7 +117,6 @@ void detectProcessBalls(const std::vector<GameObject> &ballObjs, const std::shar
     // 로봇 → 공 방향 계산 (항상 실행됨)
     data->robotBallAngleToField = atan2(data->ball.posToField.y - data->robotPoseToField.y, data->ball.posToField.x - data->robotPoseToField.x); // 필드 기준 공 방향 계산
 }
-
 
 bool isBallOut(double locCompareDist, double lineCompareDist, const std::shared_ptr<BrainConfig> &config, const std::shared_ptr<BrainData> &data){// 공이 필드 밖으로 나갔는지 판정하는 함수 (좌표 및 필드 라인 기준)
 

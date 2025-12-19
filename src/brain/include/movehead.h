@@ -6,8 +6,9 @@
 class Brain; 
 using namespace BT;
 
-void RegisterMoveHeadNodes(BT::BehaviorTreeFactory &factory, Brain* brain);
+void RegisterMoveHeadNodes(BT::BehaviorTreeFactory &factory, Brain* brain); // 노드 등록을 위한 함수
 
+// 액션 노드들 정리
 class MoveHead : public SyncActionNode{
 public:
     MoveHead(const std::string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain){}

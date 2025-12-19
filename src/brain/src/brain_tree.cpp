@@ -8,7 +8,7 @@
 #include "utils/math.h"
 #include "utils/print.h"
 #include "utils/misc.h"
-#include "locator.h"
+
 #include "std_msgs/msg/string.hpp"
 #include <fstream>
 #include <ios>

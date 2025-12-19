@@ -16,7 +16,7 @@ using namespace std;
 struct BrainData {
     BrainData();
 
-    // -------------------------- 게임 컨트롤러 관련 데이터 ---------------------------------- 
+    /* ----------------------------------------------------------------------------- 게임 컨트롤러 관련 파라미터 -------------------------------------------------------------------- */ 
     int score = 0;
     int oppoScore = 0;
 
@@ -31,28 +31,28 @@ struct BrainData {
     int oppoLiveCount = 0; // 상대 경기 가능한 선수 수
     string realGameSubState; // 현재 게임의 하위 상태
 
-    rclcpp::Time timeLastGamecontrolMsg; 
-    // ------------------------------------------------------------------------------------
+    rclcpp::Time timeLastGamecontrolMsg; // 마지막으로 읽은 게임 컨트롤 메시지 시간
 
-    // 게임 상태 관련
+    /* -------------------------------------------------------------------------------- 게임 상태 관련 파라미터 -------------------------------------------------------------------- */
     bool isDirectShoot = false; // 패널티킥에서 직접 슛팅으로 해도 되는지
 
     rclcpp::Time timeLastLogSave; 
     rclcpp::Time lastTick; 
 
-    // --------------------------- detection 관련 변수(공, 로봇 등등) -------------------------
+    /* ------------------------------------------------------------------------------ detection 관련 파라미터 -------------------------------------------------------------------- */
     // 마지막 객체 감지 시간 기록
     rclcpp::Time timeLastDet; 
     rclcpp::Time timeLastLineDet; // 마지막 line seg 감지 시간 기록
-    bool camConnected = false; 
+    bool camConnected = false; // 카메라 연결 상태
 
+    // ball
     GameObject ball;
     bool ballDetected = false; // 공 감지 플래그
     double robotBallAngleToField;
 
     VisionBox visionBox; 
     
-    // --------------------------- 로봇 위치 관련 변수 ---------------------------
+    /* ---------------------------------------------------------------------------- 로봇 위치 관련 파라미터 -------------------------------------------------------------------- */
     Pose2D robotPoseToField;
     Pose2D odomToField;      
     Pose2D robotPoseToOdom;  
@@ -65,27 +65,29 @@ struct BrainData {
         std::lock_guard<std::mutex> lock(_robotsMutex);
         _robots = newVec;
     }
+
     Pose2D robot2field(const Pose2D &poseToRobot);
     Pose2D field2robot(const Pose2D &poseToField);
-    // --------------------------- 로봇 머리 관련 변수 ---------------------------
+
+    /* ---------------------------------------------------------------------------- 로봇 머리 관련 파라미터 -------------------------------------------------------------------- */
     double headPitch;
     double headYaw;
     // 카메라 → 로봇 변환 행렬
     Eigen::Matrix4d camToRobot = Eigen::Matrix4d::Identity(); 
 
-    // ---------------------------- 로봇 recovery 관련 변수 ----------------------------
+    /* ---------------------------------------------------------------------------- 로봇 recovery 관련 파라미터 -------------------------------------------------------------------- */
     RobotRecoveryState recoveryState = RobotRecoveryState::IS_READY;
     bool isRecoveryAvailable = false; 
     int currentRobotModeIndex = -1;
     int recoveryPerformedRetryCount = 0; 
     bool recoveryPerformed = false;
     
-    // --------------------------- locator 관련 변수---------------------------
+    /* ---------------------------------------------------------------------------- locator 관련 파라미터 -------------------------------------------------------------------- */
+    rclcpp::Time lastSuccessfulLocalizeTime;
     vector<GameObject> getMarkingsByType(set<string> types={});
     vector<FieldMarker> getMarkersForLocator();
-    rclcpp::Time lastSuccessfulLocalizeTime;
 
-    // -------------------------- 팀원 정보 관련 변수 --------------------------
+    /* ---------------------------------------------------------------------------- 팀원 정보 관련 파라미터 -------------------------------------------------------------------- */
     TMStatus tmStatus[HL_MAX_NUM_PLAYERS]; 
     int tmCmdId = 0; 
     rclcpp::Time tmLastCmdChangeTime; 
@@ -97,8 +99,8 @@ struct BrainData {
     double tmMyCost = 0.;
     
     
+    /* ---------------------------------------------------------------------------- 필드 라인 관련 파라미터 -------------------------------------------------------------------- */
     
-    // --------------------------- 필드 라인 관련 변수 ---------------------------
     // 필드 라인 가져오는 변수
     inline vector<FieldLine> getFieldLines() const {
         std::lock_guard<std::mutex> lock(_fieldLinesMutex);
@@ -126,7 +128,7 @@ struct BrainData {
         _markings = newVec;
     }
 
-    // ------------------------- obstacle 관련 변수 -----------------------------
+    /* ---------------------------------------------------------------------------- obstacle 관련 파라미터 -------------------------------------------------------------------- */
     inline vector<GameObject> getObstacles() const {
         std::lock_guard<std::mutex> lock(_obstaclesMutex);
         return _obstacles;
@@ -135,6 +137,7 @@ struct BrainData {
         std::lock_guard<std::mutex> lock(_obstaclesMutex);
         _obstacles = newVec;
     }
+
 
 private:
     vector<GameObject> _robots = {}; 

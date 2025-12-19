@@ -20,7 +20,7 @@ public:
     void init();
     void tick();
 
-    // 블랙보드 접근 함수
+    // 블랙보드 변수 접근 함수
     template <typename T>
     inline T getEntry(const string &key){
         T value;
@@ -28,7 +28,7 @@ public:
         return value;
     }
 
-    // set entry on blackboard
+    // 블랙보드 변수 셋팅 함수
     template <typename T>
     inline void setEntry(const string &key, const T &value){
         tree.rootBlackboard()->set<T>(key, value);
@@ -38,5 +38,5 @@ private:
     Tree tree;
     Brain *brain;
 
-    void initEntry(); // 블랙보드 초기화는 여기서 
+    void initEntry(); // 블랙보드 초기화는 여기서 진행
 };

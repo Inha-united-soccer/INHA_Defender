@@ -10,60 +10,39 @@
 
 using namespace std;
 
-// 角度转弧度
-inline double deg2rad(double deg)
-{
-    return deg / 180.0 * M_PI;
-}
+// 각도 -> 라디안
+inline double deg2rad(double deg){ return deg / 180.0 * M_PI; }
 
-// 弧度转角度
-inline double rad2deg(double rad)
-{
-    return rad / M_PI * 180.0;
-}
+// 라디안 -> 각도
+inline double rad2deg(double rad){ return rad / M_PI * 180.0; }
 
-// 算术平均值
-inline double mean(double x, double y)
-{
-    return (x + y) / 2;
-}
+// 평균
+inline double mean(double x, double y){ return (x + y) / 2; }
 
-// 把数字截断到一个范围内
-inline double cap(double x, double upper_limit, double lower_limit)
-{
-    return max(min(x, upper_limit), lower_limit);
-}
+// 값 clapping
+inline double cap(double x, double upper_limit, double lower_limit){ return max(min(x, upper_limit), lower_limit); }
 
-// 计算L2范数 (两个数的平方和开根号)
-inline double norm(double x, double y)
-{
-    return sqrt(x * x + y * y);
-}
+// scalar L2 norm
+inline double norm(double x, double y){ return sqrt(x * x + y * y); }
 
-// 计算L2范数 (两个数的平方和开根号)
-inline double norm(vector<double> v)
-{
-    return sqrt(v[0] * v[0] + v[1] * v[1]);
-}
+// vector L2 norm
+inline double norm(vector<double> v){ return sqrt(v[0] * v[0] + v[1] * v[1]); }
 
-// 把一个角度换算到 [-M_PI, M_PI) 区间.
-inline double toPInPI(double theta)
-{
+// 각도를 -M_PI ~ M_PI 로 변경
+inline double toPInPI(double theta){
     int n = static_cast<int>(fabs(theta / 2 / M_PI)) + 1;
     return fmod(theta + M_PI + 2 * n * M_PI, 2 * M_PI) - M_PI;
 }
 
-// 在任意直角坐标系中, 计算一个向量 v 与 x 轴的夹角 theta (rad), 取值范围: (-M_PI, M_PI)
-inline double thetaToX(vector<double> v)
-{
+// 임의의 직교 좌표계에서 벡터 v와 x축 사이의 각도 θ(라디안)를 계산 (값 범위는 -M_PI ~ M_PI)
+inline double thetaToX(vector<double> v){
     vector<double> x = {1, 0};
     double ang = atan2(v[1], v[0]);
     return toPInPI(ang);
 }
 
 // 将一个平面坐标系 0 中的坐标, 转到坐标系 1 中, 坐标系 1 相对于 0 旋转 theta 角
-inline Point2D transform(Point2D p0, double theta)
-{
+inline Point2D transform(Point2D p0, double theta){
     Point2D p1;
     p1.x = p0.x * cos(theta) + p0.y * sin(theta);
     p1.y = -p0.x * sin(theta) + p0.y * cos(theta);
@@ -77,8 +56,7 @@ inline Point2D transform(Point2D p0, double theta)
  * @param xst, yst, thetast source 坐标系原点在 target 坐标系中的位置和朝向(st), theta 为弧度
  * @param xt, yt, thetat 输出该 Pose 在 target 坐标系中的位置和朝向, theta 为弧度
  */
-inline void transCoord(const double &xs, const double &ys, const double &thetas, const double &xst, const double &yst, const double &thetast, double &xt, double &yt, double &thetat)
-{
+inline void transCoord(const double &xs, const double &ys, const double &thetas, const double &xst, const double &yst, const double &thetast, double &xt, double &yt, double &thetat){
     thetat = toPInPI(thetas + thetast);
     xt = xst + xs * cos(thetast) - ys * sin(thetast);
     yt = yst + xs * sin(thetast) + ys * cos(thetast);
