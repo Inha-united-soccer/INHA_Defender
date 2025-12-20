@@ -6,6 +6,10 @@
 class Brain; 
 using namespace BT;
 
+/*
+    해당 파일은 MoveHead을 위한 노드와 함수만 모아놓은 헤더 파일입니다.
+*/
+
 void RegisterMoveHeadNodes(BT::BehaviorTreeFactory &factory, Brain* brain); // 노드 등록을 위한 함수
 
 // 액션 노드들 정리

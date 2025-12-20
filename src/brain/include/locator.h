@@ -17,8 +17,7 @@ using namespace std;
 namespace chr = std::chrono;
 
 
-class Locator
-{
+class Locator{
 public:
 	
 	double convergeTolerance = 0.2;	 

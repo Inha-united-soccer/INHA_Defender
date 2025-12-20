@@ -516,19 +516,20 @@ void identifyMarking(GameObject& marking, const std::shared_ptr<BrainConfig> &co
     }
 }
 
+// 상대방, 우리팀 골대 판별 
 void identifyGoalpost(GameObject& goalpost) {
     string side = "NA";
     string half = "NA";
-    if (goalpost.posToField.x > 0) half = "O";
-    else half = "S";
+    if (goalpost.posToField.x > 0) half = "O"; // 상대 진영
+    else half = "S"; // 우리팀 진영
 
-    if (goalpost.posToField.y > 0) side = "L";
-    else side = "R";
+    if (goalpost.posToField.y > 0) side = "L"; // 왼쪽
+    else side = "R"; // 오른쪽
     
     goalpost.id = 0;
-    goalpost.name = half + side;
+    goalpost.name = half + side; // ex) SL -> 우리팀 왼쪽 골대
     goalpost.idConfidence = 1.0;
-    // TODO 参考 markings, 做更为精细的 goalpostid
+    // TODO TODO 마킹(markings)을 참고해서, goalpost ID를 더 정교하게 만들기
 }
 
 } // namespace detection_utils

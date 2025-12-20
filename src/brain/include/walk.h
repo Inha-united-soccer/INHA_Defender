@@ -6,6 +6,10 @@
 class Brain; 
 using namespace BT;
 
+/*
+    해당 파일은 Walk을 위한 노드와 함수만 모아놓은 헤더 파일입니다.
+*/
+
 void RegisterWalkNodes(BT::BehaviorTreeFactory &factory, Brain* brain);
 
 class SetVelocity : public SyncActionNode{

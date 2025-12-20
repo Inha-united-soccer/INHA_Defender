@@ -32,18 +32,23 @@
 #include <stdexcept>
 #include "brain/msg/kick.hpp"
 
-#include "brain/msg/kick.hpp"
-
-// Forward declarations
-class BrainConfig;
-class BrainData;
-class BrainLog;
-class BrainTree;
-class Locator;
-class RobotClient;
+#include "brain_config.h"
+#include "brain_data.h"
+#include "brain_log.h"
+#include "brain_tree.h"
+#include "locator.h"
+#include "robot_client.h"
+#include "walk.h"
+#include "movehead.h"
 
 using namespace std;
 
+/*
+    해당 파일은 Brain 클래스의 헤더 파일입니다.
+    ROS topic들을 처리하는 함수
+    BT 행동 노드들을 등록하는 함수
+    여러 행동 노드들의 공통 판단을 위한 함수만을 포함하고 있습니다.
+*/
 
 class Brain : public rclcpp::Node
 {
@@ -71,10 +76,9 @@ public:
 
 
     // 행동 노드들 등록
-    // 행동 노드들 등록
-    void registerWalkNodes(BT::BehaviorTreeFactory &factory);
-    void registerMoveHeadNodes(BT::BehaviorTreeFactory &factory);
-    void registerLocatorNodes(BT::BehaviorTreeFactory &factory);
+    void registerWalkNodes(BT::BehaviorTreeFactory &factory){RegisterWalkNodes(factory, this);}
+    void registerMoveHeadNodes(BT::BehaviorTreeFactory &factory){RegisterMoveHeadNodes(factory, this);}
+    void registerLocatorNodes(BT::BehaviorTreeFactory &factory){RegisterLocatorNodes(factory, this);}
     
     // ROS callback 함수
     void gameControlCallback(const game_controller_interface::msg::GameControlData &msg);

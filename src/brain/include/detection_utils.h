@@ -12,7 +12,12 @@ class BrainData;
 class BrainLog;
 class BrainTree;
 
-// namespace detection_utils
+/*
+    해당 파일은 Vision에서 감지된 객체들을 게임 객체로 변환하고,
+    감지된 객체들을 후처리하는 함수들만 모아놨습니다.
+*/
+
+
 namespace detection_utils {
 
 // 시간 관련 함수
