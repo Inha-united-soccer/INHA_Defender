@@ -1259,10 +1259,10 @@ vector<double> Brain::getGoalPostAngles(const double margin){ // 공(ball) 위�
     // rightX = config->fieldDimensions.length / 2;
     // rightY = -config->fieldDimensions.goalWidth / 2;
 
-    // 반코트로 수정
-    leftX = -config->fieldDimensions.length / 2; // 음수로 변경
+    // 풀코트/반코트에 따라...
+    leftX = config->fieldDimensions.length / 2; // 음수로 변경
     leftY = config->fieldDimensions.goalWidth / 2;
-    rightX = -config->fieldDimensions.length / 2; // 음수로 변경
+    rightX = config->fieldDimensions.length / 2; // 음수로 변경
     rightY = -config->fieldDimensions.goalWidth / 2;
 
     auto goalposts = data->getGoalposts();

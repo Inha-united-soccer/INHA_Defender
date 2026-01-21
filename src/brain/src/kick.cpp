@@ -77,7 +77,7 @@ NodeStatus CalcKickDir::tick(){
         color = 0x00FF00FF;
         brain->data->kickDir = atan2(
             0 - bPos.y,
-            - fd.length/2 - bPos.x // 여기도 - 붙였음
+            fd.length/2 - bPos.x // 풀코트/반코트 따라...
         );
         // 이것도 - 로 바꿈 + 0에서 M_PI로 바꿈
         if (brain->data->ball.posToField.x < - (brain->config->fieldDimensions.length / 2)) brain->data->kickDir = M_PI; 
@@ -112,11 +112,12 @@ NodeStatus CalcKickDirWithGoalkeeper::tick(){
     
     // 골대 주변에 있는 장애물만 골키퍼 후보로 간주
     double goalX = (brain->config->fieldDimensions.length / 2);
-    goalX = - (brain->config->fieldDimensions.length / 2); 
+    goalX = (brain->config->fieldDimensions.length / 2); // 풀코트/반코트 따라...
 
     for(const auto& obs : obstacles){
-        // 골대 근처 (페널티 박스 + margin)에 있는 로봇을 골키퍼로 인식
-        if(obs.posToField.x < goalX + fd.goalAreaLength + goalkeeperMargin){goalkeepers.push_back(obs);}
+        // 골대 근처 (페널티 박스 + margin)에 있는 로봇을 골키퍼로 인식, 풀코트/반코트 따라...
+        // if(obs.posToField.x < goalX + fd.goalAreaLength + goalkeeperMargin){goalkeepers.push_back(obs);}
+        if(obs.posToField.x > goalX - fd.goalAreaLength - goalkeeperMargin){goalkeepers.push_back(obs);}
     }
 
     // 공 -> 왼쪽 포스트 각도(thetal), 공 -> 오른쪽 포스트 각도(thetar), 골키퍼가 이 사이에 있으면 각도를 좁혀야 함.
@@ -273,7 +274,7 @@ NodeStatus CalcPassDir::tick(){
         // 유효 거리 내에 있고, 가장 score가 높은 팀원 선택
         // 나랑 가까울 수록 높은 score, 전방에 있는(x좌표가 낮음) 선수일수록 높은 score
         if( dist > minpassThreshold && dist < maxpassThreshold){
-            double score = -dist * 1.0 - tmPos.x * 1.2;
+            double score = -dist * 1.0 + tmPos.x * 1.2; // 풀코트/반코트 따라...
             if(score > maxTmSelectScore){
                 maxTmSelectScore = score;
                 bestTeammateIdx = i;
@@ -307,7 +308,7 @@ NodeStatus CalcPassDir::tick(){
             double score = 10.0
                         - (fabs(x - tmPos.x) * 1.1) // 팀원과의 거리
                         - (fabs(y - tmPos.y) * 0.7) // 팀원과의 거리
-                        - x * 0.95 // x좌표가 낮을수록 높은 score
+                        + x * 0.95 // x좌표가 높을수록 높은 score... 풀코트/반코트 따라.
                         - (fabs(y) * 0.45); // y좌표가 낮을수록 높은 score
             
             Line passPath = {bPos.x, bPos.y, x, y};
@@ -448,7 +449,8 @@ NodeStatus Kick::onStart(){
     if (
         avoidPushing
         && (role != "goal_keeper")
-        && brain->data->robotPoseToField.x > -(brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 음수 및 부등호 방향 변경 -> 반코트용
+        //&& brain->data->robotPoseToField.x > -(brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 음수 및 부등호 방향 변경 -> 반코트용
+        && brain->data->robotPoseToField.x < (brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 풀코트용
         && brain->distToObstacle(brain->data->ball.yawToRobot) < kickAoSafeDist
     ) {
         brain->client->setVelocity(-0.1, 0, 0);
@@ -502,7 +504,8 @@ NodeStatus Kick::onRunning(){
     
     if (
         avoidPushing
-        && brain->data->robotPoseToField.x > -(brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 음수 및 부등호 방향 변경 -> 반코트용
+        //&& brain->data->robotPoseToField.x > -(brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 음수 및 부등호 방향 변경 -> 반코트용
+        && brain->data->robotPoseToField.x < (brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength) // 풀코트용
         && brain->distToObstacle(brain->data->ball.yawToRobot) < kickAoSafeDist
     ) {
         brain->client->setVelocity(-0.1, 0, 0);

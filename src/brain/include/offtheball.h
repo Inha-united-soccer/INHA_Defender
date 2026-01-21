@@ -22,7 +22,7 @@ public:
         return {
             InputPort<double>("stop_threshold", 0.1, "목표 위치 가까이 도달하면 정지"),
             InputPort<double>("v_limit", 0.5, "최대 속도"),
-            InputPort<double>("dist_from_goal", 3.0, "goal 앞에서 대기할 거리"),
+            InputPort<double>("dist_from_goal", 4.0, "goal 앞에서 대기할 거리"),
         };
     }
 

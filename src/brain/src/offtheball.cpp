@@ -30,8 +30,8 @@ NodeStatus OffTheBall::tick(){
     double targetx, targety, targettheta;
     auto fd = brain->config->fieldDimensions;
 
-    double goalX = -(fd.length / 2.0);
-    double baseX = goalX + distFromGoal;
+    double goalX = (fd.length / 2.0); // 풀코트/반코트에 따라...
+    double baseX = goalX - distFromGoal; // 풀코트/반코트에 따라...
 
     double maxY = fd.width / 2.0 - 0.5;
     double bestX = baseX;
@@ -96,7 +96,7 @@ NodeStatus OffTheBall::tick(){
             double distToBall = norm(x - brain->data->ball.posToField.x, y - brain->data->ball.posToField.y);
             score -= std::abs(distToBall - 2.5) * 4.5;
 
-            score += (-x) * 0.5;
+            score += (x) * 0.5; // 풀코트/반코트에 따라...
 
             Line passPath = {brain->data->ball.posToField.x, brain->data->ball.posToField.y, x, y};
             Line shotPath = {baseX, y, goalX, 0.0};
