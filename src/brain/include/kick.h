@@ -54,7 +54,7 @@ public:
 
     static PortsList providedPorts(){
         return {
-            InputPort<double>("offset_degree", 50.0, "볼-opponent 각도에서 추가로 꺾어차는 각도"),
+            InputPort<double>("offset_degree", 70.0, "볼-opponent 각도에서 추가로 꺾어차는 각도"),
         };
     }
 
