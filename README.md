@@ -1,6 +1,6 @@
 <div align="center">
 
-# :soccer: INHA Striker
+# :soccer: INHA Defender
 **Advanced Autonomous Agent for Humanoid Soccer**
 
 [![ROS2](https://img.shields.io/badge/ROS2-Humble-3490dc.svg?style=for-the-badge&logo=ros&logoColor=white)](https://docs.ros.org/en/humble/)
@@ -16,7 +16,7 @@
 ## Mission & Vision
 **"To create a soccer-playing intelligence that doesn't just calculate, but *understands* the flow of the game."**
 
-The **INHA Striker** is designed to bridge the gap between rigid robotic control and dynamic human intuition. By leveraging hierarchical behavior trees and advanced motion planning, our agent demonstrates adaptive gameplay—switching seamlessly between aggressive dribbling, tactical off-ball movement, and precision finishing.
+The **INHA Defender** is designed to bridge the gap between rigid robotic control and dynamic human intuition. By leveraging hierarchical behavior trees and advanced motion planning, our agent demonstrates adaptive gameplay—switching seamlessly between aggressive dribbling, tactical off-ball movement, and precision finishing.
 
 ---
 
@@ -34,7 +34,7 @@ We move beyond linear paths. Our **Curvilinear Approach** algorithms allow the r
 *   Execute **Swirl Maneuvers** to circle behind the ball naturally, mimicking human footwork.
 
 ### **Tactical Intelligence**
-The striker knows where to be even when it doesn't have the ball.
+The defender knows where to be even when it doesn't have the ball.
 *   **Symmetry-based Positioning**: Exploits open space by calculating optimal gaps relative to defender positions.
 *   **Obstacle-Aware Dribbling**: Dynamically projects paths to find the safest route through a crowded defense.
 
