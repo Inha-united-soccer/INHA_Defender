@@ -12,7 +12,6 @@
 #include "std_msgs/msg/string.hpp"
 #include <fstream>
 #include <ios>
-#include "gotopose.h"
 
 #define REGISTER_BUILDER(Name)     \
     factory.registerBuilder<Name>( \
@@ -26,15 +25,12 @@ void BrainTree::init(){
     brain->registerMoveHeadNodes(factory); // head move 관련 노드 등록
     brain->registerLocatorNodes(factory); // locator 관련 노드 등록
     brain->registerChaseNodes(factory); // chase 관련 노드 등록
-    RegisterKickNodes(factory, brain); // kick 관련 노드 등록
+    brain->registerKickNodes(factory); // kick 관련 노드 등록
     brain->registerAdjustNodes(factory); // adjust 관련 노드 등록
-    brain->registerSpeakNodes(factory); // speak 관련 노드 등록
+    brain->registerDecisionRoleNodes(factory); // decision role 관련 노드 등록
+    brain->registerGotoposeNodes(factory); // Gotopose 관련 노드 등록
+    brain->registerCheckAndStandUpNodes(factory); // CheckAndStandUp 관련 노드 등록
     brain->registerOfftheballNodes(factory); // offtheball 관련 노드 등록
-    brain->registerDefenderDecisionNodes(factory); // defender decision 관련 노드 등록
-    brain->registerStrikerDecisionNodes(factory); // striker decision 관련 노드 등록
-    RegisterGotoposeNodes(factory, brain); // gotopose node registration
-    brain->registerPassReceiveNodes(factory); // pass receive 노드 등록
-    
     
     factory.registerBehaviorTreeFromFile(brain->config->treeFilePath);
     tree = factory.createTree("MainTree");
@@ -53,10 +49,13 @@ void BrainTree::initEntry(){
     setEntry<bool>("gc_is_sub_state_kickoff_side", false);
     setEntry<bool>("gc_is_under_penalty", false);
     setEntry<int>("control_state", 3); // control_state == 1 이면 단순 걷기로 (1->3 play.xml test)
+    setEntry<bool>("odom_calibrated", false);
     
     setEntry<string>("decision", ""); // pass / chase / adjust / kick / assist 더 추가 예정
     setEntry<bool>("wait_for_opponent_kickoff", false);
     setEntry<string>("player_role", brain->config->playerRole); // play.xml (striker / defender / goal_keeper)
+    setEntry<bool>("is_lead", true); // 리드인지 아닌지
+
     brain->log->logToScreen("debug/Blackboard", "BB Role: " + brain->config->playerRole, 0x00FF00FF);
 
 
@@ -69,9 +68,6 @@ void BrainTree::initEntry(){
 
     //  승재욱 추가 : chase -> adjust -> kick
     setEntry<string>("striker_state", "chase");   
-
-    // 위치 추정 보정 여부
-    setEntry<bool>("odom_calibrated", false);
 }
 
 void BrainTree::tick(){ tree.tickOnce(); }

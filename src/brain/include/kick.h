@@ -37,9 +37,8 @@ public:
 
     static PortsList providedPorts(){
         return {
-            InputPort<double>("cross_threshold", 0.5, "득점 가능한 각도 범위가 이 값보다 작으면 크로스(패스)로 전환"),
-            InputPort<double>("goalkeeper_margin", 0.2, "골키퍼 회피 마진 (m)"),
-            InputPort<double>("goal_area_buffer", 0.5, "골키퍼 전진 감지 버퍼 (m)")
+            InputPort<double>("cross_threshold", 0.2, "득점 가능한 각도 범위가 이 값보다 작으면 크로스(패스)로 전환"),
+            InputPort<double>("goalkeeper_margin", 0.3, "골키퍼 회피 마진 (m)")
         };
     }
 
@@ -47,8 +46,22 @@ public:
 
 private:
     Brain *brain;
-    int _lastGapSide = 0; // 0: Center, 1: Left, -1: Right
-    double _targetGoalY = 0.0;
+};
+
+class CalcClearingDir : public SyncActionNode {
+public:
+    CalcClearingDir(const string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain) {}
+
+    static PortsList providedPorts(){
+        return {
+            InputPort<double>("offset_degree", 30.0, "볼-opponent 각도에서 추가로 꺾어차는 각도"),
+        };
+    }
+
+    NodeStatus tick() override;
+
+private:
+    Brain *brain;
 };
 
 class CalcPassDir : public SyncActionNode {
@@ -57,7 +70,12 @@ public:
 
     static PortsList providedPorts(){
         return {
-            InputPort<double>("pass_threshold", 3.0, "팀원과의 최대 거리")
+            InputPort<double>("min_pass_threshold", 1.0, "팀원과의 최소 거리"),
+            InputPort<double>("max_pass_threshold", 4.0, "팀원과의 최대 거리"),
+            InputPort<double>("score_threshold", 6.0, "패스를 주기로 결정할 score의 최소값"),
+
+            OutputPort<bool>("pass_found"),
+            OutputPort<double>("pass_speed_limit"),
         };
     }
 
@@ -75,14 +93,12 @@ public:
     static PortsList providedPorts()
     {
         return {
-            InputPort<double>("kick_speed", 1.3, "킥 동작 속도 (Power)"),
             InputPort<double>("min_msec_kick", 500, "킥 동작을 최소한 이 시간(ms) 동안 실행"),
             InputPort<double>("msecs_stablize", 1000, "동작 안정화를 위해 정지 상태로 유지하는 시간(ms)"),
             InputPort<double>("speed_limit", 0.8, "속도의 최대값"),
             InputPort<string>("kick_type", "kick", "킥 종류 (로그용)"),
             InputPort<double>("vx_limit", 1.0, "X축 속도 제한"),
             InputPort<double>("vy_limit", 0.4, "Y축 속도 제한"),
-            // InputPort<double>("kick_y_offset", -0.077, "킥 시 Y 오프셋"),
         };
     }
 
@@ -100,6 +116,5 @@ private:
     int _msecKick = 1000;    
     double _speed; 
     double _minRange; 
-    double _msecs_stablize;
     tuple<double, double, double> _calcSpeed();
 };

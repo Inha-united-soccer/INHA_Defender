@@ -50,6 +50,8 @@ struct BrainData {
 
     // ball
     GameObject ball;
+    GameObject emaball; // 시간에 따른 공의 위치의 EMA... 260120 지훈추가 
+    GameObject tmBall; 
     bool ballDetected = false; // 공 감지 플래그
     double robotBallAngleToField;
 
@@ -103,6 +105,7 @@ struct BrainData {
     bool tmImLead = true; 
     bool tmImAlive = true; 
     double tmMyCost = 0.;
+    Point2D tmtarget;
     
     // Team Discovery 추적 (BrainCommunication 용)
     int discoveryMsgId = 0;
@@ -112,8 +115,6 @@ struct BrainData {
     string tmIP = "";
     int sendId = 0;
     rclcpp::Time sendTime;
-    
-    GameObject tmBall;
     
     
     /* ---------------------------------------------------------------------------- 필드 라인 관련 파라미터 -------------------------------------------------------------------- */

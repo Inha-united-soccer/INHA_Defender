@@ -40,8 +40,7 @@ NodeStatus Adjust::tick(){
     getInput("vtheta_limit", vthetaLimit);
     getInput("range", range);
     double kickYOffset;
-    // if(!getInput("kick_y_offset", kickYOffset)) kickYOffset = 0.077;
-    kickYOffset = 0.0; // 당분간 사용 안 함
+    if(!getInput("kick_y_offset", kickYOffset)) kickYOffset = 0.077;
 
     log(format("ballX: %.1f ballY: %.1f ballYaw: %.1f", brain->data->ball.posToRobot.x, brain->data->ball.posToRobot.y, brain->data->ball.yawToRobot));
     double NO_TURN_THRESHOLD, TURN_FIRST_THRESHOLD;
@@ -77,19 +76,6 @@ NodeStatus Adjust::tick(){
         // vxLimit = 0.1;
     }
 
-    // 골문 가까이서 더 빠르게
-    double distToGoal = norm(
-        brain->data->robotPoseToField.x - (brain->config->fieldDimensions.length / 2),
-        brain->data->robotPoseToField.y
-    );
-    
-    // 골대와 가까우면(2m) 더 과감하게 움직임 (= 속도 증가)
-    if (distToGoal < 2.0) {
-        log("Near Goal Mode: Boost Speed");
-        st *= 1.5; // 횡이동 속도 1.5배
-        sr = cap(sr, 0.5, -0.5); // 전후진 속도 제한도 품
-    }
-
     double theta_robot_f = brain->data->robotPoseToField.theta; 
     double thetat_r = dir_rb_f + M_PI / 2 * (deltaDir > 0 ? -1.0 : 1.0) - theta_robot_f; 
     double thetar_r = dir_rb_f - theta_robot_f; 
@@ -118,10 +104,7 @@ NodeStatus Adjust::tick(){
     brain->client->setVelocity(vx, vy, vtheta);
 
     // 승재욱 추가
-    double successDeltaDir = 0.1; // 기본 5.7도
-    if (distToGoal < 2.0) successDeltaDir = 0.25; // 14도 정도로 완화
-
-    bool adjustDone = fabs(deltaDir) <= successDeltaDir && fabs(ballYaw) <= 0.1 && ballRange < range + 0.1;
+    bool adjustDone = fabs(deltaDir) <= 0.1 && fabs(ballYaw) <= 0.1 && ballRange < range + 0.1;
     if (adjustDone){
         // brain->tree->setEntry("striker_state", "kick");
         log("adjust -> kick (ready)");

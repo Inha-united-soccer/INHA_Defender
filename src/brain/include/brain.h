@@ -43,11 +43,10 @@
 #include "chase.h"
 #include "kick.h"
 #include "adjust.h"
-#include "speak.h"
+#include "decision_role.h"
+#include "gotopose.h"
+#include "checkandstandup.h"
 #include "offtheball.h"
-#include "defender_decision.h"
-#include "striker_decision.h"
-#include "pass_receive.h"
 
 // Forward declaration to avoid circular dependency
 class BrainCommunication;
@@ -94,11 +93,9 @@ public:
     void registerChaseNodes(BT::BehaviorTreeFactory &factory){RegisterChaseNodes(factory, this);}
     void registerKickNodes(BT::BehaviorTreeFactory &factory){RegisterKickNodes(factory, this);}
     void registerAdjustNodes(BT::BehaviorTreeFactory &factory){RegisterAdjustNodes(factory, this);}
-    void registerSpeakNodes(BT::BehaviorTreeFactory &factory){RegisterSpeakNodes(factory, this);}
+    void registerGotoposeNodes(BT::BehaviorTreeFactory &factory){RegisterGotoposeNodes(factory, this);}
+    void registerCheckAndStandUpNodes(BT::BehaviorTreeFactory &factory){RegisterCheckAndStandUpNodes(factory, this);}
     void registerOfftheballNodes(BT::BehaviorTreeFactory &factory){RegisterOfftheballNodes(factory, this);}
-    void registerDefenderDecisionNodes(BT::BehaviorTreeFactory &factory){RegisterDefenderDecisionNodes(factory, this);}
-    void registerStrikerDecisionNodes(BT::BehaviorTreeFactory &factory){RegisterStrikerDecisionNodes(factory, this);}
-    void registerPassReceiveNodes(BT::BehaviorTreeFactory &factory){RegisterPassReceiveNodes(factory, this);}
     
     // ROS callback 함수
     void gameControlCallback(const game_controller_interface::msg::GameControlData &msg);
@@ -112,10 +109,10 @@ public:
     void imageCallback(const sensor_msgs::msg::Image &msg);
 
     void logObstacles();
-    void logVisionBox(rclcpp::Time timestamp);
     void logDepth(int grid_x_count, int grid_y_count, vector<vector<int>> &grid_occupied, vector<rerun::Vec3D> &points_robot);
 
     /* ----------------------------- role 결정을 위한 함수 ----------------------------- */
+    void registerDecisionRoleNodes(BT::BehaviorTreeFactory &factory){RegisterDecisionRoleNodes(factory, this);}
     bool isAngleGood(double goalPostMargin = 0.3, string type = "kick");
     
 
@@ -124,6 +121,10 @@ public:
     /* ----------------------------- 변수 업데이트를 위한 함수들 ----------------------------- */
     void updateRelativePos(GameObject &obj);
     bool isFreekickStartPlacing();
+    void updateMemory();
+    void updateRobotMemory();
+    void updateKickoffMemory();
+
 
     /*------------------------------- 공통으로 쓰이는 판단 로직 함수 ----------------------------------------------*/
     // ostacle 관련 함수
@@ -141,9 +142,6 @@ public:
     // goalpost 관련 함수
     vector<double> getGoalPostAngles(const double margin = 0.3);
 
-    void speak(string text, bool allowRepeat = false);
-    
-
 private:
     void loadConfig(); // config 불러오기
 
@@ -152,12 +150,8 @@ private:
     void updateObstacleMemory();
     void handleCooperation();
     void updateCostToKick();
-
-    void updateRobotMemory();
-    void updateKickoffMemory();
-    void updateMemory();
-
-    void logMemRobots();
+    void logMemRobots(); 
+    
 
     // ROS subscription 변수
     rclcpp::Subscription<game_controller_interface::msg::GameControlData>::SharedPtr gameControlSubscription;
@@ -169,10 +163,6 @@ private:
     rclcpp::Subscription<booster_interface::msg::RawBytesMsg>::SharedPtr recoveryStateSubscription;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr depthImageSubscription;
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr imageSubscription;
-
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubSoundPlay;
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pubSpeak;
-    rclcpp::TimerBase::SharedPtr timer_;
     
     // tf2 broadcaster
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

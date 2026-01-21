@@ -201,8 +201,8 @@ struct TMStatus {
     double thetaRb = 0.; 
     int cmd = 0; 
     int cmdId = 0;
-
     rclcpp::Time timeLastCom; 
+    // 지훈추가
     bool passSignal = false;
     double passTargetX = 0.;
     double passTargetY = 0.;

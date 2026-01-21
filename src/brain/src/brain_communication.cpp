@@ -384,11 +384,13 @@ void BrainCommunication::unicastCommunication() {
         msg.thetaRb = brain->data->robotBallAngleToField;
         msg.cmdId = brain->data->tmMyCmdId;
         msg.cmd = brain->data->tmMyCmd;
+
+        // 지훈추가
         msg.passSignal = brain->data->tmStatus[brain->config->playerId].passSignal;
         msg.passTargetX = brain->data->tmStatus[brain->config->playerId].passTargetX;
         msg.passTargetY = brain->data->tmStatus[brain->config->playerId].passTargetY;
-        log(format("ImAlive: %d, ImLead: %d, myCost: %.1f, myCmdId: %d, myCmd: %d", msg.isAlive, msg.isLead, msg.cost, msg.cmdId, msg.cmd));
-
+        
+        log(format("ImAlive: %d, ImLead: %d, myCost: %.1f, myCmdId: %d, myCmd: %d, (target x: %.2f, target y: %.2f)", msg.isAlive, msg.isLead, msg.cost, msg.cmdId, msg.cmd, msg.passTargetX, msg.passTargetY));
         std::lock_guard<std::mutex> lock(_teammate_addresses_mutex);
         for (auto it = _teammate_addresses.begin(); it != _teammate_addresses.end(); ++it) {
             auto ip = it->second.ip;
@@ -540,7 +542,7 @@ void BrainCommunication::spinCommunicationReceiver() {
         //     continue;
         // }
 
-
+        log(format("TMID: %.d, alive: %d, lead: %d, cost: %.1f, CmdId: %d, Cmd: %d, (target x: %.2f, target y: %.2f)", msg.playerId, msg.isAlive, msg.isLead, msg.cost, msg.cmdId, msg.cmd, msg.passTargetX, msg.passTargetY));
 
         /* ---------------- 데이터 업데이트 ---------------- */
         // 수신된 패킷 내용을 BrainData의 tmStatus에 저장 -> 이 데이터는 전략(누가 공을 찰지)과 시각화(Rerun에서 Teammate 표시)에 사용됨
@@ -561,10 +563,12 @@ void BrainCommunication::spinCommunicationReceiver() {
         tmStatus.timeLastCom = brain->get_clock()->now(); // 마지막 통신 시간 갱신
         tmStatus.cmd = msg.cmd; // 명령
         tmStatus.cmdId = msg.cmdId; // 명령 ID
-
+        
+        // 추가!
         tmStatus.passSignal = msg.passSignal; // defender의 패스 신호
         tmStatus.passTargetX = msg.passTargetX; // defender의 패스 위치 X
         tmStatus.passTargetY = msg.passTargetY; // defender의 패스 위치 Y
+        
 
         // 새로운 명령 수신 확인
         if (msg.cmdId > brain->data->tmCmdId) {

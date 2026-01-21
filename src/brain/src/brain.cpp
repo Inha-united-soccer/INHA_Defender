@@ -46,8 +46,8 @@ Brain::Brain() : rclcpp::Node("brain_node"){
     // 전략 관련 파라미터
     declare_parameter<double>("strategy.ball_confidence_threshold", 50.0);   // 공 인식 신뢰도 임계값
     declare_parameter<double>("strategy.ball_memory_timeout", 5.0); // 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터 (공의 위치를 알고있다고 판단하는 시간)
-    declare_parameter<double>("strategy.tm_ball_dist_threshold", 3.0); // 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터 (공의 위치를 알고있다고 판단하는 시간)
-    declare_parameter<double>("strategy.cooperation.ball_control_cost_threshold", 10.0); // 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터 (공의 위치를 알고있다고 판단하는 시간)
+    declare_parameter<double>("strategy.tm_ball_dist_threshold", 3.0);
+    declare_parameter<double>("strategy.cooperation.ball_control_cost_threshold", 10.0);
 
     // 킥 관련 파라미터
     declare_parameter<bool>("strategy.abort_kick_when_ball_moved", false);
@@ -111,9 +111,8 @@ Brain::Brain() : rclcpp::Node("brain_node"){
     // 게임 컨트롤러 IP 주소
     declare_parameter<string>("game_control_ip", "0.0.0.0");
 
-    // sound
-    declare_parameter<bool>("sound.enable", false);
-    declare_parameter<string>("sound.sound_pack", "espeak");
+    //recovery 관련
+    declare_parameter<int>("recovery.retry_max_count", 2);
 }
 
 Brain::~Brain(){}
@@ -158,10 +157,6 @@ void Brain::init(){
     string depthTopic = get_parameter("vision.depth_image_topic").as_string();
     depthImageSubscription = create_subscription<sensor_msgs::msg::Image>(depthTopic, SUB_STATE_QUEUE_SIZE, bind(&Brain::depthImageCallback, this, _1));
 
-    // sound
-    pubSoundPlay = create_publisher<std_msgs::msg::String>("/play_sound", 10);
-    pubSpeak = create_publisher<std_msgs::msg::String>("/speak", 10);
-
     // rerun 연결 시에만 사용함 -> 이미지 캡처
     if (config->rerunLogEnableFile || config->rerunLogEnableTCP) {
         string imageTopic = get_parameter("vision.image_topic").as_string();
@@ -191,7 +186,7 @@ void Brain::loadConfig(){
 
     // 전략 관련 파라미터 
     get_parameter("strategy.ball_confidence_threshold", config->ballConfidenceThreshold);  // 공 탐지 신뢰도 임계값
-    get_parameter("strategy.tm_ball_dist_threshold", config->tmBallDistThreshold); // 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터 (공의 위치를 알고있다고 판단하는 시간)
+    get_parameter("strategy.tm_ball_dist_threshold", config->tmBallDistThreshold);
 
     // chase 관련 파라미터
     get_parameter("chase.limit_near_ball_speed", config->limitNearBallSpeed);
@@ -415,7 +410,7 @@ void Brain::gameControlCallback(const game_controller_interface::msg::GameContro
 
     // 로봇이 페널티를 받으면 경기장 밖으로 나갔다가 다시 들어와야 합니다. 
     // 이때 로봇의 현재 위치 정보(Odometry)가 틀어질 수 있으므로, odom_calibrated(오도메트리 보정 여부)를 false로 설정하여 위치 추정(Localization)을 초기화하겠다는 의미입니다.
-    // if (isUnderPenalty && !lastIsUnderPenalty) tree->setEntry<bool>("odom_calibrated", false); 
+    if (isUnderPenalty && !lastIsUnderPenalty) tree->setEntry<bool>("odom_calibrated", false); 
 
     // 점수 기록
     data->score = static_cast<int>(myTeamInfo.score);
@@ -432,15 +427,6 @@ void Brain::detectionsCallback(const vision_interface::msg::Detections &msg){
     data->timeLastDet = timePoint; // 디버깅 시 지연 시간 정보를 출력하기 위해 사용
 
     auto gameObjects = detection_utils::detectionsToGameObjects(msg, config, data); // 감지된 객체 리스트 GameObject 객체로 변환
-    
-    // Update robotBallAngleToField
-    // Adjust 노드 등에서 사용하는 값이므로 여기서 최신화해야 해야한다 방향 튀는 문제
-    if (data->ballDetected) {
-        data->robotBallAngleToField = atan2(
-            data->ball.posToField.y - data->robotPoseToField.y,
-            data->ball.posToField.x - data->robotPoseToField.x
-        );
-    }
     
     // Identify Teammates before separating objects
     detection_utils::identifyTeammates(gameObjects, data);
@@ -477,12 +463,8 @@ void Brain::detectionsCallback(const vision_interface::msg::Detections &msg){
 
     // 시야 정보 처리 및 로깅
     detection_utils::detectProcessVisionBox(msg, data);
-    logVisionBox(detection_utils::timePointFromHeader(msg.header));
 
     // 로그 기록
-    auto tp = detection_utils::timePointFromHeader(msg.header);
-    log->setTimeSeconds(tp.seconds());
-    log->logToScreen("debug/DetCheck", format("Det count: %zu, Time: %.2f", gameObjects.size(), tp.seconds()), 0xFF00FFFF);
     logDetection(gameObjects);
 }
 
@@ -754,19 +736,6 @@ void Brain::depthImageCallback(const sensor_msgs::msg::Image &msg){
                     obj.posToRobot.y = y_min + (j + 0.5) * grid_size;
                     obj.confidence = grid_occupied[i][j]; // 포인트가 많이 찍힌 셀 = 더 강한 장애물 후보
                     updateFieldPos(obj); // 로봇 좌표(posToRobot)를 필드 좌표(posToField)로 변환
-                    
-                    // Person(사람)과 겹치는 장애물은 무시
-                    bool isPerson = false;
-                    auto persons = data->getPersons();
-                    for(const auto& p : persons){
-                         // 0.5m 이내면 동일 물체로 간주
-                        if(norm(obj.posToField.x - p.posToField.x, obj.posToField.y - p.posToField.y) < 0.5){
-                            isPerson = true;
-                            break;
-                        }
-                    }
-                    if(isPerson) continue;
-
                     obs_new.push_back(obj);
                 }
             }
@@ -903,11 +872,34 @@ void Brain::updateBallMemory(){
     }
 
     updateRelativePos(data->ball);
-    // updateRelativePos(data->tmBall);
-
+    updateRelativePos(data->tmBall);
+    
     static Point lastBallPos = data->ball.posToField;
     static rclcpp::Time lastBallTime = data->ball.timePoint;
 
+    // === EMA 업데이트 ===
+    static bool emaInit = false;
+    const double emaAlpha = 0.3; // 필요하면 상수/파라미터로 조정
+
+    if (!emaInit) {
+        data->emaball.posToField = lastBallPos; // 초기값은 기존 lastBallPos로 시드
+        emaInit = true;
+    }
+
+    bool haveOwnBall = data->ballDetected && tree->getEntry<bool>("ball_location_known");
+    bool haveTmBall = tree->getEntry<bool>("tm_ball_pos_reliable");
+
+    if (haveOwnBall || haveTmBall) {
+        const auto& src = haveOwnBall ? data->ball.posToField : data->tmBall.posToField;
+
+        data->emaball.posToField.x = emaAlpha * src.x + (1.0 - emaAlpha) * data->emaball.posToField.x;
+        data->emaball.posToField.y = emaAlpha * src.y + (1.0 - emaAlpha) * data->emaball.posToField.y;
+
+        data->emaball.timePoint = get_clock()->now();
+        updateRelativePos(data->emaball);
+    }
+    // ==================
+    
     // Calculate ball speed
     double dt = msecsSince(lastBallTime) / 1000.0;
     if (dt > 0.0 && dt < 1.0 && data->ballDetected) {
@@ -930,29 +922,20 @@ void Brain::updateBallMemory(){
 
     // 로그 기록
     log->setTimeNow();
-    
-    // 공이 보이지 않지만 위치를 알고 있다면 주황색으로 표시
-    uint32_t ballColor = 0x00FF00FF; // Green (Detected)
-    if (!data->ballDetected) {
-        ballColor = 0xFF8800FF; // Orange (Memory)
-    }
-
-    // [User Request] Simplify Ball Visualization (Dot only)
-    log->log(
+    log->logBall(
         "field/ball", 
-        rerun::Points2D({{(float)data->ball.posToField.x, (float)-data->ball.posToField.y}})
-        .with_colors({ballColor})
-        .with_radii({0.05f})
-        .with_labels({"Ball"})
-    );
-    
-    // log->logBall(
-    //     "field/tmBall", 
-    //     data->tmBall.posToField, 
-    //     0xFFFF00FF,
-    //     tree->getEntry<bool>("tm_ball_pos_reliable"),
-    //     tree->getEntry<bool>("tm_ball_pos_reliable")
-    //     );
+        data->ball.posToField, 
+        data->ballDetected ? 0x00FF00FF : 0x006600FF,
+        data->ballDetected,
+        tree->getEntry<bool>("ball_location_known")
+        );
+    log->logBall(
+        "field/tmBall", 
+        data->tmBall.posToField, 
+        0xFFFF00FF,
+        tree->getEntry<bool>("tm_ball_pos_reliable"),
+        tree->getEntry<bool>("tm_ball_pos_reliable")
+        );
 }
 // 장애물 리스트를 매 주기마다 정리하고 BrainData에 다시 저장하는 함수
 // 장애물 리스트 업데이트 시 특수 상황 인지를 위한 함수 (공을 장애물로 인식할지 말지를 결정)
@@ -1084,8 +1067,8 @@ void Brain::logDetection(const vector<GameObject> &gameObjects, bool logBounding
     }
     
     // else 
-    // else 
-
+    rclcpp::Time timePoint = gameObjects[0].timePoint;
+    log->setTimeSeconds(timePoint.seconds());
 
     map<std::string, rerun::Color> detectColorMap = {
         {"LCross", rerun::Color(0xFFFF00FF)},
@@ -1357,28 +1340,6 @@ void Brain::logObstacles() {
     );
 }
 
-
-void Brain::logVisionBox(rclcpp::Time timestamp) {
-    auto vbox = data->visionBox;
-    log->setTimeSeconds(timestamp.seconds());
-
-    vector<rerun::Vec3D> points;
-    // vbox points are in pairs (x, y) relative to robot
-    for (size_t i = 0; i < vbox.posToRobot.size() / 2; ++i) {
-        points.push_back(rerun::Vec3D{vbox.posToRobot[2*i], -vbox.posToRobot[2*i+1], 0.0});
-    }
-    // Close the loop
-    if (!points.empty()) {
-        points.push_back(points[0]);
-    }
-
-    log->log("robotframe/vision_box", 
-        rerun::LineStrips3D(rerun::Collection<rerun::components::LineStrip3D>(points))
-        .with_colors(0x00FF00FF)
-        .with_radii(0.02)
-    );
-}
-
 void Brain::logDepth(int grid_x_count, int grid_y_count, vector<vector<int>> &grid_occupied, vector<rerun::Vec3D> &points_robot) {
     // time is set on the outside
     const double grid_size = get_parameter("depth_obstacle_preprocessing.grid_size").as_double();  // 网格 크기
@@ -1464,6 +1425,43 @@ void Brain::logDepth(int grid_x_count, int grid_y_count, vector<vector<int>> &gr
     );
 }
 
+void Brain::logMemRobots() {
+    auto rbts = data->getRobots();
+    // prtDebug(format("logMemRobots called, robotsize = %d", rbts.size()), RED_CODE);
+
+    if (rbts.size() == 0) {
+        log->log("field/mem_robots", rerun::Clear::FLAT);
+        // log->log("robotframe/mem_robots", rerun::Clear::FLAT);
+        return;
+    }
+    
+    // else 
+    log->setTimeNow();
+    // vector<rerun::Vec2D> points;
+    vector<rerun::LineStrip2D> circles;
+    vector<rerun::Vec2D> points_r; // robot frame
+    for (int i = 0; i < rbts.size(); i++)
+    {
+        auto rbt = rbts[i];
+        log->logRobot("field/robots", Pose2D({rbt.posToField.x, rbt.posToField.y, -M_PI}), 0xFF0000FF);
+        // circles.push_back(log->circle(rbt.posToField.x, -rbt.posToField.y, 0.5)); // y 取反是因为 rerun Viewer 的坐标系是左手系。转一下看起来更方便。
+        // points_r.push_back(rerun::Vec2D{rbt.posToRobot.x, -rbt.posToRobot.y});
+    }
+
+    // log->log("field/mem_robots",
+    //          rerun::LineStrips2D(circles)
+    //              .with_colors(0xFF0000AA)
+    //              .with_radii(0.01)
+    //          // .with_labels(labels)
+    // );
+    // log->log("robotframe/mem_robots",
+    //          rerun::Points2D(points_r)
+    //              .with_colors(0xFF0000AA)
+    //              .with_radii(0.5)
+    //          // .with_labels(labels)
+    // );
+}
+
 bool Brain::isAngleGood(double goalPostMargin, string type) {
     double angle = 0;
     if (type == "kick") angle = data->robotBallAngleToField; // type == "kick": 로봇 → 공 방향 벡터 (필드 좌표계)
@@ -1480,17 +1478,10 @@ bool Brain::isAngleGood(double goalPostMargin, string type) {
         theta_r = goalPostAngles[1]; 
     }
 
-    double diff = theta_l - theta_r;
-    if (diff < 0) diff += 2 * M_PI; // Normalize to 0~2PI
-
-    if (diff > M_PI) { // Pasing through PI boundary (Goal is at -X direction)
-        return (angle > theta_l || angle < theta_r);
-    } else { // Normal case (Goal is at +X direction)
-        return (angle < theta_l && angle > theta_r);
-    }
+    return (theta_l > angle && theta_r < angle);
 }
 
-/* ------------------------- Cooperation 관련 함수 구현 -------------------------------*/
+//-------------------------------커뮤니케이션 기반 결과 처리----------------------------------
 void Brain::handleCooperation() {
     auto log_ = [=](string msg) {
         log->setTimeNow();
@@ -1507,14 +1498,15 @@ void Brain::handleCooperation() {
 
     vector<int> aliveTmIdxs = {}; 
 
-
+		// 내 상태 업데이트 (패널티가 아니고, local이 됨).
+		// cost 계산 호출
     data->tmImAlive = 
         (data->penalty[selfIdx] == PENALTY_NONE) 
         && tree->getEntry<bool>("odom_calibrated"); 
     updateCostToKick(); 
     log_(format("ImAlive: %d, myCost: %.1f", data->tmImAlive, data->tmMyCost));
 
-    
+    // field에 있는 살아있는 팀메이트 시각화 (rerun으로)
     int gcAliveCount = 0; 
     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++)
     {
@@ -1532,7 +1524,7 @@ void Brain::handleCooperation() {
             string label = format("ID: %d, Cost: %.1f", tmId, tmStatus.cost);
             log->logRobot(format("field/teammate-%d", tmId).c_str(), tmStatus.robotPoseToField, color, label);
             log->logBall(
-            format("tm_ball-%d", tmId).c_str(),
+            format("field/tm_ball-%d", tmId).c_str(),   // 로그 위치 수정
             tmStatus.ballPosToField, 
             tmStatus.ballDetected ? 0x00FFFFFF : (tmStatus.isAlive ? 0x006666FF : 0x003333FF),
             tmStatus.ballConfidence,
@@ -1542,6 +1534,8 @@ void Brain::handleCooperation() {
     }
     log_(format("gcAliveCnt: %d", gcAliveCount));
 
+
+		// 통신이 5초 이 끊겨도 죽은것처럼 처리
     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
         if (i == selfIdx) continue; 
 
@@ -1562,10 +1556,10 @@ void Brain::handleCooperation() {
     }
     log_(format("alive TM Count: %d", aliveTmIdxs.size()));
 
-    // log 当前 alive 队友的信息
     log_(format("Self: cost: %.1f, isLead: %d", data->tmMyCost, data->tmImLead));
 
 
+		// 공 위치 보정
     static rclcpp::Time lastTmBallPosTime = get_clock()->now();
     const double TM_BALL_TIMEOUT = 1000.; 
     const double RANGE_THRESHOLD = config->tmBallDistThreshold; 
@@ -1606,7 +1600,9 @@ void Brain::handleCooperation() {
             tree->setEntry<bool>("tm_ball_pos_reliable", false);
         }
     }
-
+		
+        // 역할 스위칭 (config에서 on off 가능)
+    // 팀원 수가 덜 차면 striker로
     bool switchRole;
     get_parameter("strategy.cooperation.enable_role_switch", switchRole);
     if (switchRole) {
@@ -1623,49 +1619,40 @@ void Brain::handleCooperation() {
     
         }
     }
-
+    
+		// initial이면 처음 역할
     if (tree->getEntry<string>("gc_game_state") == "INITIAL") {
         tree->setEntry<string>("player_role", config->playerRole);
     }
 
-
+		// 팀원들 중 최소 cost 가져오기
     double tmMinCost = 1e5;
     for (int i = 0; i < aliveTmIdxs.size(); i++) {
         int tmIdx = aliveTmIdxs[i];
         auto tmStatus = data->tmStatus[tmIdx];
         if (tmStatus.cost < tmMinCost) tmMinCost = tmStatus.cost;
     }
+
     double BALL_CONTROL_COST_THRESHOLD = 3.0;
     get_parameter("strategy.cooperation.ball_control_cost_threshold", BALL_CONTROL_COST_THRESHOLD);
 
+		// 내 cost가 그거보다 크면 팀원이 lead, 아니면 내가 lead
     if (tmMinCost < BALL_CONTROL_COST_THRESHOLD && data->tmMyCost > tmMinCost) {
-    // [TEST] 강제로 리더가 아님(False)으로 고정하여 Offtheball 테스트
-    // if (true || (tmMinCost < BALL_CONTROL_COST_THRESHOLD && data->tmMyCost > tmMinCost)) {
 
         data->tmImLead = false;
         tree->setEntry<bool>("is_lead", false);
-        log_(format("I am NOT Lead. (tmMinCost: %.2f < %.1f && myCost: %.2f > tmMinCost)", tmMinCost, BALL_CONTROL_COST_THRESHOLD, data->tmMyCost));
+        log_("I am not lead");
 
     } else {
         data->tmImLead = true;
         tree->setEntry<bool>("is_lead", true);
-        log_(format("I am Lead! (tmMinCost: %.2f, myCost: %.2f)", tmMinCost, data->tmMyCost));
+        log_("I am Lead");
     }
     log_(format("tmMinCost: %.1f, myCost: %.1f", tmMinCost, data->tmMyCost));
 
-    // Cost, lead, role 관계 표시 위함
-    log->logToScreen(
-        "debug/Coop",
-        format("Cost: %.2f | Lead: %s | Role: %s", 
-            data->tmMyCost, 
-            data->tmImLead ? "YES" : "NO",
-            tree->getEntry<string>("player_role").c_str()), 
-        data->tmImLead ? 0x00FF00FF : 0xFFFF00FF
-    );
-    log->log("debug/my_cost_scalar", rerun::Scalar(data->tmMyCost));
-    log->log("debug/is_lead_scalar", rerun::Scalar(data->tmImLead ? 1.0 : 0.0));
-
-
+		
+		// 골키퍼가 lead일땐 골대에 가장 가까운 선수가 골키퍼가 되고
+		// 나는 striker로 전환
     if (
         data->tmImAlive 
         && tree->getEntry<string>("player_role") == "goal_keeper"
@@ -1701,7 +1688,8 @@ void Brain::handleCooperation() {
         }
     }
 
-
+		// 팀원에게서 온 명령 처리 (앞서 있던 골키퍼 지정...)
+		// 내가 대상이면 역할바꾸고, 아니면 로그
     auto cmd = data->tmReceivedCmd;
     if (cmd != 0) {
         log_(format("received cmd %d from teammate", cmd));
@@ -1711,7 +1699,7 @@ void Brain::handleCooperation() {
             if (newGoalieId == selfId) { 
                 log_("i become goalie");
                 tree->setEntry<string>("player_role", "goal_keeper");
-                speak("i become goalie", true);
+                // speak("i become goalie", true);
             } else { 
                 log_(format("teammate %d becomes goalie", newGoalieId));
             }
@@ -1744,40 +1732,35 @@ void Brain::updateCostToKick() {
     double cost = 0.;
 
 
-    if (!data->ballDetected) cost += 5.0; // 공 안보이면 리더 권한 강하게 놓기 (2.0 -> 5.0)
+		// 공 인식 freshness (최근에 봤으면 유리함)
+    // if (!data->ballDetected) cost += 2.0;
     // double secsSinceBallDet = msecsSince(data->ball.timePoint) / 1000;
     // cost += secsSinceBallDet;
     // log_(format("ball not dectect cost: %.1f", secsSinceBallDet));
 
-
+		// 공 위치 불확실성
     // if (!tree->getEntry<bool>("ball_location_known")) {
     //     cost += 5.0;
     //     log_(format("ball lost cost: %.1f", 5.0));
     // }
 
-
+		// 공까지의 거리
     cost += data->ball.range;
-    
-    // [Possession Bonus] 공을 소유하고 있으면(1.0m 이내) 코스트를 대폭 낮춤 -> Striker 유지 (OffTheBall 0.9m보다 크게 잡음)
-    if (data->ball.range < 1.0) {
-        cost -= 10.0;
-    }
-
     log_(format("ball range cost: %.1f", data->ball.range));
     
     
-
+		// 장애물 방해
     // if (distToObstacle(data->ball.yawToRobot) < 1.5) {
     //     log_(format("obstacle cost: %.1f", 2.0));
     //     cost += 2.0;
     // }
 
-
+		// 공 정렬 각도
     // cost += fabs(data->ball.yawToRobot) / 1.0; 
     // log_(format("ball yaw cost: %.1f", fabs(data->ball.yawToRobot) / 1.0));
 
 
-
+		// 팀원과의 충돌 가능성
     // int selfIdx = config->playerId - 1;
     // for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
     //     if (i == selfIdx) continue; 
@@ -1797,23 +1780,25 @@ void Brain::updateCostToKick() {
     //         log_(format("bump cost: %.1f", 2.0));  
     //     }
     // }
-
+		
+		// 킥 방향 보정량
     // cost += fabs(toPInPI(data->kickDir - data->robotBallAngleToField)) * 0.4 / 0.3; 
     // log_(format("ajust cost: %.1f", fabs(toPInPI(data->kickDir - data->robotBallAngleToField)) * 0.4 / 0.3));
     
-
+		// 넘어짐 여부 판단
     if (data->recoveryState == RobotRecoveryState::HAS_FALLEN) {
         cost += 15.0;
         log_(format("fall cost: %.1f", 15.0));  
     }
 
-    
+    // local 실패
     if (!tree->getEntry<bool>("odom_calibrated")) {
         cost += 100;
         log_(format("localization cost: %.1f", 100.0));  
 
     }
     
+    // 스무딩
     double lastCost = data->tmMyCost;
     data->tmMyCost = lastCost * 0.5 + cost * 0.5;
     log_(format("lastCost: %.1f, newCost: %.1f, smoothCost: %.1f", lastCost, cost, data->tmMyCost));
@@ -1839,7 +1824,7 @@ void Brain::updateRobotMemory() {
         auto r = robots[i];
 
 
-        if (msecsSince(r.timePoint) > 5000)  continue;
+        if (msecsSince(r.timePoint) > 1000)  continue;
 
 
         updateRelativePos(r);
@@ -1885,66 +1870,4 @@ void Brain::updateKickoffMemory() {
             tree->setEntry<bool>("wait_for_opponent_kickoff", false);
         }
     }
-}
-
-void Brain::logMemRobots() {
-    auto rbts = data->getRobots();
-    // prtDebug(format("logMemRobots called, robotsize = %d", rbts.size()), RED_CODE);
-
-    // 먼저 기존 로봇 로그를 모두 지웁니다 (Recursive)
-    // 이렇게 하면 이전 프레임의 로봇들이 남아서 중복되어 보이는 문제를 해결할 수 있습니다.
-    log->log("field/robots", rerun::Clear::RECURSIVE);
-
-    if (rbts.size() == 0) {
-        return;
-    }
-    
-    // else 
-    log->setTimeNow();
-    for (int i = 0; i < rbts.size(); i++)
-    {
-        auto rbt = rbts[i];
-        // 각 로봇마다 고유한 경로 사용 (field/robots/0, field/robots/1, ...)
-        log->logRobot(format("field/robots/%d", i), Pose2D({rbt.posToField.x, rbt.posToField.y, -M_PI}), 0xFF0000FF);
-    }
-}
-
-/* ----------------------------- speak ----------------------------- */
-void Brain::speak(string text, bool allowRepeat)
-{
-    auto log_ = [=](string msg) {
-        // log->setTimeNow();
-        // log->log("debug/speak", rerun::TextLog(msg));
-    };
-
-    const double COOLDOWN_MSECS = 2000.;
-    if (!pubSpeak) {
-        log_("publisher not found");
-        return;
-    }
-    if (!config->soundEnable || config->soundPack != "espeak") {
-        log_("config not compatible");
-        return;
-    }
-
-    static string _lastText;
-    static rclcpp::Time _lastTime;
-
-    if (msecsSince(_lastTime) < COOLDOWN_MSECS) {
-        log_("cooldown in process");
-        return;
-    }
-    
-    if (_lastText == text && (!allowRepeat)) {
-        log_("repeat not allowed");
-        return;
-    }
-    
-    // else
-    _lastTime = get_clock()->now();
-    std_msgs::msg::String msg;
-    msg.data = text;
-    pubSpeak->publish(msg);
-
-    _lastText = text;
 }

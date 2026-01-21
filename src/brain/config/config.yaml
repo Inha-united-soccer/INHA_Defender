@@ -2,30 +2,29 @@ brain_node:
   ros__parameters:
     game:
       team_id: 13
-      player_id: 1 # 1 | 2 | 3 | 4 | 5
+      player_id: 2 # 1 | 2 | 3 | 4 | 5
       field_type: "inha_size" # kid_size | adult_size | inha_size
-      player_role: "striker" # striker | defender | goal_keeper
-      treat_person_as_robot: false
+      player_role: "defender" # striker | defender | goal_keeper
+      treat_person_as_robot: false 
       number_of_players: 2
      
     robot: # 로봇 제어할 때 clapping 등 동작을 위한 파라미터 -> robot_client.cpp 에서 사용
       robot_height: 0.9 
       odom_factor: 1.2 
-      vx_factor: 0.50 
+      vx_factor: 1.0
       yaw_offset: 0.0 
-      vx_limit: 1.3
-      vy_limit: 0.4
+      vx_limit: 1.0 
+      vy_limit: 0.5
       vtheta_limit: 1.2 
 
     strategy:
       ball_confidence_threshold: 50.0 # 공 인식 신뢰도 임계값
       ball_memory_timeout: 5.0 # 공의 위치를 얼마나 많은 시간동안 기억할지 정하는 파라미터
 
-      # 킥에 사용 
-      # 슛 동작 중에 공이 약간이라도 앞으로 나가면 킥을 중단함
-      abort_kick_when_ball_moved: false 
+      # 킥에 사용
+      abort_kick_when_ball_moved: true 
 
-    # 통신 처리
+      # 통신 처리
       tm_ball_dist_threshold: 2.0 
       cooperation: 
         enable_role_switch: false
@@ -37,15 +36,15 @@ brain_node:
       near_ball_range: 3.0 # 분명 m 기준일텐데 3m면 너무 큰거 아닌가?
     
     obstacle_avoidance:
-      occupancy_threshold: 500 # 2000은 너무 높아서 수정 (max ~952, set to 500)
-      collision_threshold: 0.7 # 충돌 회피 거리 임계값 (로봇 반경 고려) 
+      occupancy_threshold: 30 # 2000은 너무 높아서 수정 (sample_step 16일 때 약 952포인트 최대)
+      collision_threshold: 0.4 # 충돌 회피 거리 임계값 (로봇 반경 고려) 
       # 밑에 2개 변수를 chase에 뺄지 고민중 
-      avoid_during_chase: true # chase 중에 장애물을 회피할 지 여부
-      chase_ao_safe_dist: 1.5 # chase 중 장애물을 회피할 때 최소 안전 거리
+      avoid_during_chase: false # chase 중에 장애물을 회피할 지 여부
+      chase_ao_safe_dist: 3.5 # chase 중 장애물을 회피할 때 최소 안전 거리
 
       # 킥에 사용
       avoid_during_kick: false 
-      kick_ao_safe_dist: 1.0 
+      kick_ao_safe_dist: 3.0 
       
       obstacle_memory_msecs: 500. # 장애물을 얼마나 오랫동안 기억할지 ms 
       enable_freekick_avoid: false # freekick 중 장애물을 회피할지 여부
@@ -56,6 +55,9 @@ brain_node:
 
     communication:
       enable: true # 팀 통신 활성화 여부 (default: false)
+
+    recovery:
+      retry_max_count: 3 # 넘어졌을 때 get up 시도 최대 횟수
 
     vision:
       image_topic: "/booster_camera_bridge/StereoNetNode/rectified_image" # d-robotics
@@ -76,17 +78,12 @@ brain_node:
       ball_exclusion_radius: 0.0 # 공을 장애물로 인식하기 하는 것을 제외하기 위해
       ball_exclusion_height: 0.3 
 
-    sound:
-      enable: false 
-      sound_pack: "espeak" 
-
     rerunLog:
       enable_tcp: true # 리런에 연결 할 지
-
-      server_ip: "192.168.0.206:9876" # "192.168.50.8:9876" 
+      server_ip: "192.168.50.137:9876" 
       enable_file: true  # 리런 로그 파일을 만들지
       log_dir: "/home/booster/Workspace/rrlog" # 리런 로그 파일 저장 경로
       max_log_file_mins: 5.0 # 리런 로그 파일 최대 길이 (분)
       img_interval: 1 # 리런 로그 파일 이미지 저장 간격
       
-    game_control_ip: "192.168.0.73" # 게임 컨트롤러 IP 주소 -> gamecontroller launch 파일도 수정 필요
+    game_control_ip: "192.168.50.221" # 게임 컨트롤러 IP 주소 -> gamecontroller launch 파일도 수정 필요
