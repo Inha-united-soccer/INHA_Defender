@@ -53,7 +53,7 @@
                         <ReactiveSequence _while="gc_game_state=='PLAY'" name="Play">
                             <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
                             <ReactiveSequence>
-                                <SubTree ID="Striker" _autoremap="true" _while="player_role == 'striker'" />
+                                <!-- <SubTree ID="Striker" _autoremap="true" _while="player_role == 'striker'" /> -->
                                 <SubTree ID="Defender" _autoremap="true" _while="player_role == 'defender'" />
                             </ReactiveSequence>
                             <SubTree ID="Locate" _autoremap="true" />
