@@ -48,7 +48,7 @@ public:
             InputPort<double>("vx_limit", 0.6, "최대 속도"),
             InputPort<double>("vy_limit", 0.3, "최대 속도"),
             InputPort<double>("init_golie_pos_x", -2.0, "골대중앙위치... 보다 살짝 앞에"),
-            InputPort<double>("init_golie_pos_y", 0.0, "골대중앙위치"),
+            InputPort<double>("init_golie_pos_y", -1.5, "골대중앙위치"),
             InputPort<double>("init_golie_pos_theta", 0.0, "골대중앙위치"),
         };
     }
