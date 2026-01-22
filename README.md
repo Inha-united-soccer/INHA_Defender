@@ -8,7 +8,7 @@
 [![BehaviorTree](https://img.shields.io/badge/BehaviorTree-V4-2ca02c.svg?style=for-the-badge)](https://www.behaviortree.dev/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-yellow.svg?style=for-the-badge)](LICENSE)
 
-*Dynamic Decision Making • Tactical Positioning • Human-like Agility*
+*Dynamic Decision Making • Tactical Positioning • Strategic Passing Decisions*
 
 ---
 </div>
@@ -46,23 +46,10 @@ The defender knows where to be even when it doesn't have the ball.
 
 ## System Architecture
 
-The system is built on a robust perception-action loop:
 
-```mermaid
-graph LR
-    A[Perception] -->|Ball & Field Data| B(Decision Brain)
-    
-    B -->|Behavior Tree| C{State Selection}
-    C -->|Attack| D[Chase & Dribble]
-    C -->|Support| E[OfftheBall Move]
-    C -->|Search| F[Active Scan]
-    
-    D --> G[Motion Control]
-    E --> G
-    F --> G
+<img width="3509" height="1492" alt="Defender" src="https://github.com/user-attachments/assets/8740f085-cc16-4508-a4e4-d47cc7c5d9a6" />
 
-    style B fill:#feca57,stroke:#333,stroke-width:2px,color:black
-```
+
 
 ---
 
