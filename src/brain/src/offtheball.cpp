@@ -14,6 +14,7 @@
 
 void RegisterOfftheballNodes(BT::BehaviorTreeFactory &factory, Brain* brain){
     REGISTER_OFFTHEBALL_BUILDER(OffTheBall) // Gotopose
+    REGISTER_HOLD_BUILDER(InitPos)
 }
 
 NodeStatus OffTheBall::tick(){
@@ -75,7 +76,7 @@ NodeStatus OffTheBall::tick(){
 
             for (const auto& defenderIndex : defenderIndices) {
                 double dist = norm(y - Opponents[defenderIndex].posToField.y,
-                                   baseX - Opponents[defenderIndex].posToField.x);
+                                   x - Opponents[defenderIndex].posToField.x);
                 dist = cap(dist, 3.0, 0.0);
                 distToDefender += dist;
             }
@@ -216,5 +217,65 @@ NodeStatus OffTheBall::tick(){
     );
 
     brain->client->setVelocity(controlx, controly, controltheta);
+    return NodeStatus::SUCCESS;
+}
+
+NodeStatus InitPos::tick(){
+    double turn_Threshold;
+    double stop_Threshold;
+    double vxLimit;
+    double vyLimit;
+    getInput("turn_threshold", turn_Threshold); 
+    getInput("stop_threshold", stop_Threshold); 
+    getInput("vx_limit", vxLimit);
+    getInput("vy_limit", vyLimit);
+
+    // 골대중앙위치
+    double targetx, targety, targettheta;
+    getInput("init_golie_pos_x", targetx); 
+    getInput("init_golie_pos_y", targety); 
+    getInput("init_golie_pos_theta", targettheta); 
+
+    // 본인 위치
+    auto gPos = brain->data->robotPoseToField;
+    double gx = gPos.x, gy = gPos.y, gtheta = gPos.theta;
+
+    double errorx = targetx - gx;
+    double errory = targety - gy;
+    double targetdir = atan2(errory, errorx); // 내 위치에서 골대중앙을 이은 벡터의 각도
+    double errortheta = targetdir - gtheta; // 이걸 P제어한다면 골대중앙을 쳐다볼것.
+
+    double dist = norm(errorx, errory); // 골대중앙까지의 거리
+    double controlx, controly, controltheta;
+    double Kp = 4.0;
+    double linearFactor = 1.0 / (1.0 + exp(-6.0 * (dist - 0.5)));
+
+    // 수정
+    if(dist > turn_Threshold){ // 직진
+      controlx = errorx*cos(gtheta) + errory*sin(gtheta);
+      controly = -errorx*sin(gtheta) + errory*cos(gtheta);
+      controlx *= linearFactor;
+      controly *= linearFactor;
+      controlx = cap(controlx, vxLimit, -vxLimit*0.5);    
+      controly = cap(controly, vyLimit, -vyLimit);
+      controltheta = errortheta * Kp;
+    }
+    else if(dist < turn_Threshold && dist > stop_Threshold){ // 선회
+		  controlx = errorx*cos(gtheta) + errory*sin(gtheta);
+      controly = -errorx*sin(gtheta) + errory*cos(gtheta);
+      controlx *= linearFactor;
+      controly *= linearFactor;
+      controlx = cap(controlx, vxLimit, -vxLimit*0.5);    
+      controly = cap(controly, vyLimit, -vyLimit);
+	    controltheta = (targettheta - gtheta) * Kp; // 이러면 gtheta(로봇방향)이 targettheta를 바라봄
+    }
+    
+    else if(dist < turn_Threshold && dist < stop_Threshold){ // 정지
+        controlx = 0;
+        controly = 0;
+        controltheta = 0;
+    }
+
+	brain->client->setVelocity(controlx, controly, controltheta, false, false, false);
     return NodeStatus::SUCCESS;
 }
