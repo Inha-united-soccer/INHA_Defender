@@ -14,7 +14,7 @@
 
 void RegisterOfftheballNodes(BT::BehaviorTreeFactory &factory, Brain* brain){
     REGISTER_OFFTHEBALL_BUILDER(OffTheBall) // Gotopose
-    REGISTER_HOLD_BUILDER(InitPos)
+    REGISTER_OFFTHEBALL_BUILDER(InitPos)
 }
 
 NodeStatus OffTheBall::tick(){
