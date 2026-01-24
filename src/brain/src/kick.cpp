@@ -388,6 +388,9 @@ NodeStatus CalcPassDir::tick(){
             .with_colors({color}) // Cyan color for pass
             .with_radii(0.01)
     );
+    brain->log->log("field/pass_dir", 
+            rerun::TextLog(format("Decided to make a pass. Score: %.2f", maxScore))
+    );
 
     return NodeStatus::SUCCESS;
 }
