@@ -15,6 +15,7 @@ void RegisterKickNodes(BT::BehaviorTreeFactory &factory, Brain* brain){
     REGISTER_KICK_BUILDER(CalcClearingDir)
     REGISTER_KICK_BUILDER(CalcPassDir)
     REGISTER_KICK_BUILDER(Kick)
+    REGISTER_KICK_BUILDER(Shoot) // 추가
 }
 
 // 해당 노드는 반코트용으로 짰음 -> 풀코트 용으로 나중에 수정 필요함 
@@ -586,4 +587,18 @@ void Kick::onHalted(){
     // [원본]
     // brain->tree->setEntry("striker_state", "chase");
     _startTime -= rclcpp::Duration(100, 0);
+}
+
+NodeStatus Shoot::tick() {
+    brain->log->setTimeNow();
+        brain->log->log(
+            "debug/shooting",
+            rerun::TextLog(format(
+                "Shooting Done"
+            ))
+        );
+
+        brain->client->Shooting();
+
+    return NodeStatus::SUCCESS;
 }

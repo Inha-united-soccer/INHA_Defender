@@ -118,3 +118,18 @@ private:
     double _minRange; 
     tuple<double, double, double> _calcSpeed();
 };
+
+class Shoot : public SyncActionNode {
+public:
+    Shoot(const string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain) {}
+
+    static PortsList providedPorts(){
+        return {
+        };
+    }
+
+    NodeStatus tick() override;
+
+private:
+    Brain *brain;
+};

@@ -60,6 +60,11 @@ msg::BoosterApiReqMsg CreateWaveHandMsg(HandIndex hand_index, HandAction hand_ac
 msg::BoosterApiReqMsg CreateLieDownMsg() {
     return ConstructMsg(LocoApiId::kLieDown, "");
 }
+// =====슈팅shooting=====
+msg::BoosterApiReqMsg CreateShootMsg() {
+    return ConstructMsg(LocoApiId::kShoot, "");
+}
+//======================
 msg::BoosterApiReqMsg CreateGetUpMsg() {
     return ConstructMsg(LocoApiId::kGetUp, "");
 }

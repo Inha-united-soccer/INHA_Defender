@@ -59,6 +59,13 @@ int RobotClient::waveHand(bool doWaveHand)
     return call(booster_interface::CreateWaveHandMsg(booster::robot::b1::HandIndex::kRightHand, doWaveHand ? booster::robot::b1::HandAction::kHandOpen : booster::robot::b1::HandAction::kHandClose));
 }
 
+//=====슈팅shooting=====
+int RobotClient::shooting()
+{
+    return call(booster_interface::CreateShootMsg());
+}
+//=====================
+
 int RobotClient::setVelocity(double x, double y, double theta, bool applyMinX, bool applyMinY, bool applyMinTheta)
 {
     brain->log->setTimeNow();
