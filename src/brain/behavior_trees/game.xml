@@ -40,7 +40,7 @@
 
                         <ReactiveSequence _while="gc_game_state=='READY'" name="Ready">
                             <SetVelocity x="0.0" y="0.0" theta="0.0" />
-                            <InitPos vx_limit="0.3" vy_limit="0.15"/>
+                            <InitPos vx_limit="0.3" vy_limit="0.15" init_golie_pos_x="-2.0" init_golie_pos_y="-1.5"/>
                             <SubTree ID="Locate" _autoremap="true" />
                         </ReactiveSequence>
 
