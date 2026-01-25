@@ -60,10 +60,10 @@ brain_node:
       retry_max_count: 3 # 넘어졌을 때 get up 시도 최대 횟수
 
     vision:
-      image_topic: "/StereoNetNode/rectified_image" # d-robotics
-      depth_image_topic: "/StereoNetNode/stereonet_depth" # d-robotics
-      # image_topic: "/booster_camera_bridge/StereoNetNode/rectified_image" # d-robotics
-      # depth_image_topic: "/booster_camera_bridge/StereoNetNode/stereonet_depth" # d-robotics
+      # image_topic: "/StereoNetNode/rectified_image" # d-robotics
+      # depth_image_topic: "/StereoNetNode/stereonet_depth" # d-robotics
+      image_topic: "/booster_camera_bridge/StereoNetNode/rectified_image" # d-robotics
+      depth_image_topic: "/booster_camera_bridge/StereoNetNode/stereonet_depth" # d-robotics
       cam_pixel_width: 544. # d-robotics
       cam_pixel_height: 448. # d-robotics
       cam_fov_x: 69.4 # d-robotics / 카메라 시야각, 단위: 도
