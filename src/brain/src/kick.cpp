@@ -598,7 +598,7 @@ NodeStatus Shoot::tick() {
             ))
         );
 
-        brain->client->Shooting();
+        brain->client->shooting();
 
     return NodeStatus::SUCCESS;
 }

@@ -104,6 +104,8 @@ public:
      */
     int standUp();
 
+    int shooting(); // ADDED!
+
 
     /**
      * @brief 进阻尼
