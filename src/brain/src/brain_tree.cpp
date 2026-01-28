@@ -13,6 +13,11 @@
 #include <fstream>
 #include <ios>
 
+// Strategy
+#include "strategy/strategy_nodes.h"
+// Tactics
+#include "tactics/tactics_nodes.h"
+
 #define REGISTER_BUILDER(Name)     \
     factory.registerBuilder<Name>( \
         #Name,                     \
@@ -31,6 +36,10 @@ void BrainTree::init(){
     brain->registerGotoposeNodes(factory); // Gotopose 관련 노드 등록
     brain->registerCheckAndStandUpNodes(factory); // CheckAndStandUp 관련 노드 등록
     brain->registerOfftheballNodes(factory); // offtheball 관련 노드 등록
+
+    // NEW: Register Strategy & Tactics Nodes
+    RegisterStrategyNodes(factory, brain);
+    RegisterTacticsNodes(factory, brain);
     
     factory.registerBehaviorTreeFromFile(brain->config->treeFilePath);
     tree = factory.createTree("MainTree");

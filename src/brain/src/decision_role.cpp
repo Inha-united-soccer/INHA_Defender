@@ -191,6 +191,16 @@ NodeStatus GoalieDecide::tick()
 }
 
 NodeStatus DefenderDecide::tick() {
+    double paramChaseSpeed = 0.8;
+    double paramDefenseLineX = -10.0; // 기본값: 제한 없음
+    double paramKickThreshold = 0.3;  
+    
+    // Default 값
+    if (auto val = brain->tree->getEntry<double>("Strategy.param_chase_speed_limit")) paramChaseSpeed = val;
+    if (auto val = brain->tree->getEntry<double>("Strategy.param_defense_line_x")) paramDefenseLineX = val;
+    if (auto val = brain->tree->getEntry<double>("Strategy.param_kick_threshold")) paramKickThreshold = val;
+
+    
     double chaseRangeThreshold;
     getInput("chase_threshold", chaseRangeThreshold);
     string lastDecision;
@@ -315,6 +325,7 @@ NodeStatus DefenderDecide::tick() {
         }
     }
     // 5) non-lead면서 레인 안이면 -> side_chase (항상)
+    // TODO: 수비포지셔닝 추가
     else {
         newDecision = "side_chase";
         color = 0x00FFFFFF;
