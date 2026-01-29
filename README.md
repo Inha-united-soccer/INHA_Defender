@@ -13,38 +13,68 @@
 ---
 </div>
 
-## Mission & Vision
+## Defender Vision
 **"To create a soccer-playing intelligence that doesn't just calculate, but *understands* the flow of the game."**
 
-The **INHA Defender** is designed to bridge the gap between rigid robotic control and dynamic human intuition. By leveraging hierarchical behavior trees and advanced motion planning, our agent demonstrates adaptive gameplay—switching seamlessly between defensive clearing, tactical off-ball movement, and precision passing.
+The **INHA Defender** is designed to bridge the gap between rigid robotic control and dynamic human intuition. By leveraging hierarchical behavior trees and advanced motion planning, our agent demonstrates adaptive gameplay—switching seamlessly between defensive clearing, tactical off-the-ball movement, and line-breaking passing.
 
 ---
 
-## Key Features
+## Key Feature
 
-### **Cognitive Flexibility**
-Instead of simple if-else logic, we utilize a **Behavior Tree (BT)** architecture that allows for complex, reactive decision-making. The robot constantly evaluates the game state to transition between behaviors seamlessly.
-*   **Reactive**: Handles interruptions (e.g., sudden ball loss) gracefully.
-*   **Modular**: Easy to expand with new strategies or plays.
+### **Hyper-Modular Architecture**
+We separate **Strategic Intent** from **Mechanical Execution** using a novel **Parameter-Injection Pattern**. This allows the robot to adapt its personality in real-time without recompiling the core logic.
 
-### **Fluid Agility**
-We move beyond linear paths. Our **Curvilinear Approach** algorithms allow the robot to:
-*   Approach the ball in smooth spirals rather than sharp turns.
-*   Maintain momentum while aligning for a kick.
-*   Execute **Swirl Maneuvers** to circle behind the ball naturally, mimicking human footwork.
+### 1. Strategy Layer (The Director)
+Defines the high-level intent based on the match context.
+* **Role**: Analyzes the environment and sets the global "Mode."
+* **Example**: `Score < Opponent` & `Time Remaining < 2min` → Switches to **`ALL_OUT_ATTACK`**.
 
-### **Tactical Intelligence**
-The defender knows where to be even when it doesn't have the ball.
-*   **Symmetry-based Positioning**: Exploits open space by calculating optimal gaps relative to defender positions.
-*   **Obstacle-Aware Dribbling**: Dynamically projects paths to find the safest route through a crowded defense.
+### 2. Tactics Layer (The Tuner)
+Translates strategy into specific constraints via the **BehaviorTree Blackboard**.
+* **Role**: Injects parameters (speed, aggression, thresholds) instead of hard-coding behaviors.
+* **Feature**: **1:N Mapping** (Context-Aware Selection)
+    * Same Strategy can lead to different Tactics based on `ScoreDiff`, `BallPosition`, etc.
+    * **Example**:
+      * **`OFFENSIVE` Strategy**:
+        * *Losing by 3+ goals*: `TOTAL_ASSAULT` (Risky Attack)
+        * *Ball in own half*: `COUNTER_ATTACK` (Fast Break)
+        * *Otherwise*: `PRESSING` (Standard Pressure)
+      * **`DEFENSIVE` Strategy**:
+        * *Winning by 3+ goals*: `TEMPO_CONTROL` (Possession Game)
+        * *Ball near own goal*: `DEEP_DEFENSE` (Park the Bus)
+        * *Otherwise*: `LINE_DEFENSE` (Standard Defense)
 
-### **Precision & Power**
-*   **Kick Lock Mechanism**: Prevents action oscillation by committing to a shot once a high-confidence window is identified.
-*   **Adaptive Head Tracking**: Smoothes out sensor noise for stable vision while tracking high-speed balls.
+### 3. Execution Layer (The Engine)
+The robust `DefenderDecide` node and leaf nodes consume these parameters to perform actions.
+* **Role**: Executes the "How" based on the "What" provided by the Tactics layer.
+* **Example**: The `Chase` node reads `speed_limit = 1.0` and triggers a max-speed sprint, while `DefenderDecide` uses the loose `kick_threshold` to shoot at the first opportunity.
+
+
+> **💡 The Benefit**
+> You can completely overhaul the robot's playstyle—from a conservative defender to a hyper-aggressive striker—just by tweaking a few numbers in the Tactics layer, with **zero risk** of breaking the core movement logic.
+
+> #### **📂 Proof of Modularity: Code Structure**
+> Our source tree is explicitly organized to enforce this architectural separation:
+> 
+> * 📂 **[`src/brain/src/`](src/brain/src)**
+>   * 📂 **[`strategy/`](src/brain/src/strategy)** — *(Layer 1: Strategy Director)*
+>     * 📄 [`strategy_director.cpp`](src/brain/src/strategy/strategy_director.cpp)
+>     * 📄 [`game_state_manager.cpp`](src/brain/src/strategy/game_state_manager.cpp)
+>     * 📄 [`strategy_nodes.cpp`](src/brain/src/strategy/strategy_nodes.cpp)
+>   * 📂 **[`tactics/`](src/brain/src/tactics)** — *(Layer 2: Tactics / Tuners)*
+>     * 📄 [`tactic_selector.cpp`](src/brain/src/tactics/tactic_selector.cpp)
+>     * 📄 [`tactics_definitions.cpp`](src/brain/src/tactics/tactics_definitions.cpp)
+>     * 📄 [`tactics_nodes.cpp`](src/brain/src/tactics/tactics_nodes.cpp)
+>   * ⚙️ **Layer 3: Execution Engines** — *(Consumers)*
+>     * 📄 [`decision_role.cpp`](src/brain/src/decision_role.cpp) : **Main Decision Logic**
+>     * 📄 [`offtheball.cpp`](src/brain/src/offtheball.cpp)
+>     * 📄 [`chase.cpp`](src/brain/src/chase.cpp)
+>     * *... (kick, adjust, etc.)*
 
 ---
 
-## System Architecture
+## Defender Behavior Tree Overview
 
 
 <img width="3509" height="1492" alt="Defender" src="https://github.com/user-attachments/assets/8740f085-cc16-4508-a4e4-d47cc7c5d9a6" />
