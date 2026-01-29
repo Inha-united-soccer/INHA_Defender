@@ -79,15 +79,6 @@ The robust `DefenderDecide` node and leaf nodes consume these parameters to perf
 <img width="3509" height="1492" alt="Defender" src="https://github.com/user-attachments/assets/8740f085-cc16-4508-a4e4-d47cc7c5d9a6" />
 
 
-
----
-
-## Contribution
-This project contributes to the field of humanoid robotics by:
-1.  **Demonstrating Robust Autonomy**: Showing how behavior trees can handle the chaotic environment of a soccer match.
-2.  **Implementing Human-inspired Motion**: Proving that curvilinear paths are superior to linear point-to-point navigation for bipedal robots.
-3.  **Open Source Innovation**: Providing a modular, extensible C++ framework for future researchers in the RoboCup domain.
-
 ---
 
 <div align="center">
