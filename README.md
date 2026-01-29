@@ -8,15 +8,14 @@
 [![BehaviorTree](https://img.shields.io/badge/BehaviorTree-V4-2ca02c.svg?style=for-the-badge)](https://www.behaviortree.dev/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-yellow.svg?style=for-the-badge)](LICENSE)
 
-*Dynamic Decision Making • Tactical Positioning • Strategic Passing Decisions*
+*Dynamic Decision Making • Tactical Positioning • Strategic Passing Decisions* </br>
 
----
-</div>
 
-## Defender Vision
 **"To create a soccer-playing intelligence that doesn't just calculate, but *understands* the flow of the game."**
 
 The **INHA Defender** is designed to bridge the gap between rigid robotic control and dynamic human intuition. By leveraging hierarchical behavior trees and advanced motion planning, our agent demonstrates adaptive gameplay—switching seamlessly between defensive clearing, tactical off-the-ball movement, and line-breaking passing.
+
+</div>
 
 ---
 
