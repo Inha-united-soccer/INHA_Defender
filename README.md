@@ -18,8 +18,8 @@ The **INHA Defender** is designed to bridge the gap between rigid robotic contro
 </div>
 
 ---
+## Key Strength : Hyper-Modular Architecture
 
-### **Hyper-Modular Architecture**
 We separate **Strategic Intent** from **Mechanical Execution** using a novel **Parameter-Injection Pattern**. This allows the robot to adapt its personality in real-time without recompiling the core logic.
 
 ### 1. Strategy Layer (The Director)
