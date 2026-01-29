@@ -76,8 +76,7 @@ The robust `DefenderDecide` node and leaf nodes consume these parameters to perf
 ## Defender Behavior Tree Overview
 
 
-<img width="3509" height="1492" alt="Defender" src="https://github.com/user-attachments/assets/8740f085-cc16-4508-a4e4-d47cc7c5d9a6" />
-
+<img width="2638" height="1106" alt="image" src="https://github.com/user-attachments/assets/ede0aee0-aa1b-48e0-85f3-0e0cb135f3ea" />
 
 ---
 
