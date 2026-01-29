@@ -10,6 +10,7 @@
 
 *Dynamic Decision Making • Tactical Positioning • Strategic Passing Decisions* </br>
 
+</br>
 
 **"To create a soccer-playing intelligence that doesn't just calculate, but *understands* the flow of the game."**
 
