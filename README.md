@@ -80,6 +80,6 @@ The robust `DefenderDecide` node and leaf nodes consume these parameters to perf
 ---
 
 <div align="center">
-    <b>Built with by INHA United</b><br>
+    <b>Built by INHA United</b><br>
     <i>Pushing the boundaries of Autonomous Soccer</i>
 </div>
