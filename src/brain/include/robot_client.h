@@ -104,6 +104,9 @@ public:
      */
     int standUp();
 
+    /**
+     * @brief 起身
+     */
     int shooting(); // ADDED!
 
 
