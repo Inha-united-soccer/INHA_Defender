@@ -11,9 +11,9 @@ PortsList GameStateManager::providedPorts()
 NodeStatus GameStateManager::tick()
 {
     
-    int myScore = brain->data->gameControlData.score[0]; // 0: My team
-    int oppScore = brain->data->gameControlData.score[1]; 
-    int timeRemaining = 100; // 일단 야매로 수정
+    int myScore = brain->data->RoboCupGameControlData.teams[0].score; // 0: My team
+    int oppScore = brain->data->RoboCupGameControlData.teams[1].score; 
+    int timeRemaining = brain->data->RoboCupGameControlData.secsRemaining;
 
     bool isWinning = myScore > oppScore;
     bool isLosing = myScore < oppScore;
