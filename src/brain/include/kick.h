@@ -128,7 +128,7 @@ public:
         return {
             InputPort<string>("last_action", ""),
             OutputPort<string>("this_action"),
-            InputPort<double>("min_shoot_interval_msec", 700.0, "연속 Shoot 최소 간격(ms)"),
+            InputPort<double>("min_shoot_interval_msec", 7000.0, "연속 Shoot 최소 간격(ms)"),
         };
     }
 
