@@ -121,12 +121,14 @@ private:
 
 class Shoot : public SyncActionNode {
 public:
-    Shoot(const string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain) {}
+    Shoot(const string &name, const NodeConfig &config, Brain *_brain)
+        : SyncActionNode(name, config), brain(_brain) {}
 
     static PortsList providedPorts(){
         return {
-            InputPort<string>("last_action"),
+            InputPort<string>("last_action", ""),
             OutputPort<string>("this_action"),
+            InputPort<double>("min_shoot_interval_msec", 700.0, "연속 Shoot 최소 간격(ms)"),
         };
     }
 
@@ -134,4 +136,6 @@ public:
 
 private:
     Brain *brain;
+    rclcpp::Time _lastShootTime{};
+    bool _hasShotOnce = false;
 };

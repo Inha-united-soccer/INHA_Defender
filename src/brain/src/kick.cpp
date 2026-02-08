@@ -590,20 +590,37 @@ void Kick::onHalted(){
 }
 
 NodeStatus Shoot::tick() {
-    string this_action, last_action;
-    getInput("last_action", last_action);
-    if(last_action == "Shoot") return NodeStatus::SUCCESS; //running
+    string lastAction;
+    getInput("last_action", lastAction);
 
-    string textlog = (string)brain->client->shooting();
+    // action 기반 게이트 (game.xml처럼 {action} 연결했을 때 중복 방지)
+    if (lastAction == "Shoot") {
+        return NodeStatus::SUCCESS;
+    }
+
+    double minIntervalMsec = getInput<double>("min_shoot_interval_msec").value();
+
+    // 시간 기반 게이트 (포트 미연결인 트리에서도 중복 방지)
+    if (_hasShotOnce && brain->msecsSince(_lastShootTime) < minIntervalMsec) {
+        return NodeStatus::SUCCESS;
+    }
+
+    const int rc = brain->client->shooting();
+    _lastShootTime = brain->get_clock()->now();
+    _hasShotOnce = true;
+
     brain->log->setTimeNow();
-        brain->log->log(
-            "debug/shooting",
-            rerun::TextLog(format(
-                "{textlog}"
-            ))
-        );
+    brain->log->log(
+        "debug/shooting",
+        rerun::TextLog(format("shooting() rc=%d", rc))
+    );
+    brain->log->logToScreen(
+        "debug/Action",
+        format("Action: Shoot rc=%d", rc),
+        (rc == 0 ? 0x00FF00FF : 0xFF0000FF)
+    );
 
     setOutput("this_action", "Shoot");
 
-    return NodeStatus::SUCCESS;
+    return (rc == 0) ? NodeStatus::SUCCESS : NodeStatus::FAILURE;
 }
