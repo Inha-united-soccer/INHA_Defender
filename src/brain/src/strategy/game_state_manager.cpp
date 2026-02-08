@@ -11,9 +11,9 @@ PortsList GameStateManager::providedPorts()
 NodeStatus GameStateManager::tick()
 {
     
-    int myScore = brain->data->RoboCupGameControlData.teams[0].score; // 0: My team
-    int oppScore = brain->data->RoboCupGameControlData.teams[1].score; 
-    int timeRemaining = brain->data->RoboCupGameControlData.secsRemaining;
+    int myScore = brain->data->score; // 0: My team
+    int oppScore = brain->data->opposcore; 
+    int timeRemaining = brain->get_clock()->now() - brain->data->kickoffStartTime; // it's actually time passed...
 
     bool isWinning = myScore > oppScore;
     bool isLosing = myScore < oppScore;
