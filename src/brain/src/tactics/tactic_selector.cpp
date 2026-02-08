@@ -15,8 +15,8 @@ NodeStatus TacticSelector::tick()
     string selectedTactic = "NORMAL"; // Default Tactics 모드 
 
     // 3. 변수 선언
-    int myScore = brain->data->gameControlData.score[0];
-    int oppScore = brain->data->gameControlData.score[1];
+    int myScore = brain->data->score;
+    int oppScore = brain->data->oppoScore; 
     int scoreDiff = myScore - oppScore;
     double ballX = brain->data->ball.posToField.x;
 
