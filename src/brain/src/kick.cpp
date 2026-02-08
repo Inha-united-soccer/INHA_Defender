@@ -590,15 +590,20 @@ void Kick::onHalted(){
 }
 
 NodeStatus Shoot::tick() {
+    string this_action, last_action;
+    getInput("last_action", last_action);
+    if(last_action == "Shoot") return NodeStatus::SUCCESS; //running
+
+    string textlog = (string)brain->client->shooting();
     brain->log->setTimeNow();
         brain->log->log(
             "debug/shooting",
             rerun::TextLog(format(
-                "Shooting Done"
+                "{textlog}"
             ))
         );
 
-        brain->client->shooting();
+    setOutput("this_action", "Shoot");
 
     return NodeStatus::SUCCESS;
 }

@@ -125,6 +125,8 @@ public:
 
     static PortsList providedPorts(){
         return {
+            InputPort<string>("last_action"),
+            OutputPort<string>("this_action"),
         };
     }
 
