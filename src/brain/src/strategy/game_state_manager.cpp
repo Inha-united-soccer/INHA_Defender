@@ -13,7 +13,7 @@ NodeStatus GameStateManager::tick()
     
     int myScore = brain->data->score; // 0: My team
     int oppScore = brain->data->oppoScore; 
-    int timeRemaining = brain->get_clock()->now() - brain->data->kickoffStartTime; // it's actually time passed...
+    int timeRemaining = 100; // 임시방편
 
     bool isWinning = myScore > oppScore;
     bool isLosing = myScore < oppScore;
